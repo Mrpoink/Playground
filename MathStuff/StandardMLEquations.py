@@ -16,6 +16,39 @@ class SMLE:
         self._math = MATH.Math()
         pass
     
+    def LSE(self, input : list):
+        ## This is used to calculate log(softmax(z))
+        ## We will be using a variant of this algorithm to prevent overflow
+        ## xi subtracted by the maximum value of x will not change the relative properties
+        ## and keeps numbers small (relatively)
+        ## This algorithm is best for categorical loss applications
+        
+        ## M for max
+        M = max(input)
+        
+        ## find sum of the e's in the row
+        exp_sum = sum([math.exp(value - M) for value in input])
+        
+        return M + math.log(exp_sum)
+    
+    def log_softmax(self, z : list):
+        ## This will compute the log_softmax efficiently if the input is a matrix
+        
+        matrix = []
+        
+        for row in z:
+            
+            lse = self.LSE(row)
+            
+            log_probs = [value - lse for value in row]
+            matrix.append(log_probs)
+            
+            
+        return matrix
+            
+        
+        
+    
     def softmax(self, z : list):
         r'''
         see my example under "Kulkarni's Equations" and "Backpropogation"
@@ -36,6 +69,24 @@ class SMLE:
             numerators = [math.exp(value - M) for value in z[i]]
             denominator = sum(numerators)
             matrix.append([numerator / denominator for numerator in numerators])
-        
-            
+     
         return matrix
+    
+    def CCEL(self, y_hat, y : list):
+        
+        softmax_matrix = self.log_softmax(y_hat)
+        
+        N = len(softmax_matrix)
+        total_loss = 0
+        
+        for i in range(len(softmax_matrix)):
+            for j in range(len(y[i])):
+                
+                loss = softmax_matrix[i][j]
+                
+                total_loss += loss
+                
+        return -1 * (total_loss / N)
+    
+    
+    

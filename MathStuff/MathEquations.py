@@ -6,6 +6,23 @@ class Math:
     def __init__(self):
         pass
     
+    def normalize(self, matrix : list):
+        r'''
+        Normalizes the rows in the matrix so the sum equals 1
+        We may be able to use the detriment to normalize
+        The entire matrix rather than a row
+        '''
+        
+        normalized_matrix = []
+        
+        for row in matrix:
+            row_sum = sum(row)
+            
+            normalized_matrix.append([value / row_sum for value in row])
+            
+        return normalized_matrix 
+        
+    
     def sigmoid(self, input : list):
         
         ## Element-wise, we parse through the existing matrix and find the sigmoid of that value

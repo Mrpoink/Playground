@@ -80,11 +80,12 @@ class SMLE:
         total_loss = 0
         
         for i in range(len(softmax_matrix)):
+            loss = 0
             for j in range(len(y[i])):
                 
-                loss = softmax_matrix[i][j]
+                loss += softmax_matrix[i][j] * y[i][j]
                 
-                total_loss += loss
+            total_loss += loss
                 
         return -1 * (total_loss / N)
     

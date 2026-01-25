@@ -13,12 +13,12 @@ _math = MATH.Math()
 class Neuron:
     
     def __init__(self):
-        self.weight = [[random.random(), random.random(), random.random()], \
+        self.weight = _math.normalize([[random.random(), random.random(), random.random()], \
                        [random.random(), random.random(), random.random()], \
-                       [random.random(), random.random(), random.random()]]
-        self.a = [[random.random(), random.random(), random.random()], \
+                       [random.random(), random.random(), random.random()]])
+        self.a = _math.normalize([[random.random(), random.random(), random.random()], \
                   [random.random(), random.random(), random.random()], \
-                  [random.random(), random.random(), random.random()]]
+                  [random.random(), random.random(), random.random()]])
         self.bias = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.output = None
         self.right = None

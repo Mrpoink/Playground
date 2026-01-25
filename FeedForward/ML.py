@@ -27,24 +27,23 @@ class FeedForward:
             
         a = input
         
-        for row in self.layers:
-            for col in self.layers:
+        for layer in self.layers:
                 
-                z = col.activate(a)
-                a = _math.sigmoid(z)
-                
-                col.output = a
+            z = layer.activate(a)
+            a = _math.sigmoid(z)
+            
+            layer.output = a
             
         return a
     
 
 ff = FeedForward(3)
-input = [[random.random(), random.random(), random.random()], \
+input = _math.normalize([[random.random(), random.random(), random.random()], \
         [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()]]
-ground_truth = [[random.random(), random.random(), random.random()], \
+        [random.random(), random.random(), random.random()]])
+ground_truth = _math.normalize([[random.random(), random.random(), random.random()], \
                 [random.random(), random.random(), random.random()], \
-                [random.random(), random.random(), random.random()]]
+                [random.random(), random.random(), random.random()]])
 test_nn = ff.get_pred(input)
 loss = _mle.CCEL(test_nn, ground_truth)
 print("\n\n--------------\n\nInput: \n")

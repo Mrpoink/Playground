@@ -9,12 +9,25 @@ sys.path.append(parent_dir)
 import math
 import random
 import MathStuff.MathEquations as MATH
+import FeedForward.NeuralNetwork as NN
 
 class SMLE:
     
     def __init__(self):
         self._math = MATH.Math()
         pass
+    
+    def get_blank_matrix(self, N : int, M : int, number : int = None):
+        matrix = [[_ for _ in range(N)] for _ in range(M)]
+        if number:
+            for i in range(N):
+                for j in range(M):
+                    matrix[i][j] = number
+        else:
+            for i in range(N):
+                for j in range(M):
+                    matrix[i][j] = 1
+        return matrix
     
     def LSE(self, input : list):
         ## This is used to calculate log(softmax(z))
@@ -88,6 +101,53 @@ class SMLE:
             total_loss += loss
                 
         return -1 * (total_loss / N)
+    
+    def cce_deriv(self, pred_matrix : list, true_matrix : list):
+        
+        N = len(pred_matrix)
+        grad_matrix = []
+        
+        for i in range(N):
+            gradient_row = []
+            for j in range(len(true_matrix[i])):
+                
+                derivative = -1 * (true_matrix[i][j] / (pred_matrix[i][j] + 1e-9))
+                gradient_row.append(derivative)
+                
+            grad_matrix.append(gradient_row)
+        
+        return grad_matrix
+        
+    
+    def sigmoid_derivative(self, matrix : list):
+        
+        blank = self.get_blank_matrix(len(matrix), len(matrix[0]), 1)
+        sub = self._math.matrix_subtraction(blank, matrix)
+        
+        return self._math.hadamard_product(matrix, sub)
+    
+    def BackPropogation_Step(self, output_node : NN.Neuron, loss : list, learning_rate : float):
+        
+        sig_der = self.sigmoid_derivative(output_node.output)
+        
+        delta = self._math.hadamard_product(loss, sig_der)
+        
+        weight_t = self._math.transpose(output_node.weight)
+        next_error = self._math.dot_product(weight_t, delta)
+        
+        input_t = self._math.transpose(output_node.input)
+        weight_gradient = self._math.dot_product(delta, input_t)
+        
+        for i in range(len(output_node.weight)):
+            for j in range(len(output_node.weight[0])):
+                change = learning_rate * weight_gradient[i][j]
+                output_node.weight[i][j] = output_node.weight[i][j] - change
+                
+        for i in range(len(output_node.bias)):
+            for j in range(len(output_node.bias[0])):
+                output_node.bias[i][j] = output_node.bias[i][j] - (learning_rate * delta[i][j])
+                
+        return next_error
     
     
     

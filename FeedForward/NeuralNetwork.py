@@ -21,17 +21,15 @@ class Neuron:
                   [random.random(), random.random(), random.random()]])
         self.bias = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.output = None
-        self.right = None
+        self.input = None
         
     def get_weight(self):
         return self.weight
     
     def activate(self, input : list):
+        self.input = input
         self.a = _math.dot_product(self.weight, input)
         output = _math.matrix_addition(self.a, self.bias)
-        print("\n\n\nActivation: \n")
-        for row in output:
-            print(row)
         return output
     
     def get_activation(self):

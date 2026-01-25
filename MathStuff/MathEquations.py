@@ -121,6 +121,28 @@ class Math:
         determinate = (matrix[0][cols] * matrix[rows][0]) - (matrix[0][0] * matrix[rows][cols])
         
         return determinate
+    
+    def hadamard_product(self, matrix_1 : list, matrix_2 : list):
+        
+        row_1 = len(matrix_1)
+        col_1 = len(matrix_1[0])
+        row_2 = len(matrix_2)
+        col_2 = len(matrix_2[0])
+        
+        if (row_1 != row_2) or (col_1 != col_2):
+            raise ValueError("Cannot multiply multiple matrices")
+        
+        product = [[_ for _ in range(col_1)] for _ in range(row_1)]
+        
+        for i in range(row_1):
+            for j in range(col_1):
+                product[i][j] = matrix_1[i][j] * matrix_2[i][j]
+                
+        return product
+    
+    def transpose(self, matrix : list):
+        
+        return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
                 
         
     # def find_inverse(self, matrix : list):

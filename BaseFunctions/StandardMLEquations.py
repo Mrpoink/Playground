@@ -60,7 +60,8 @@ class SMLE:
             
         return matrix
             
-        
+    def project(self, gate, hidden_weight):
+        return self._math.dot_product(self._math.transpose(hidden_weight), gate)
         
     
     def softmax(self, z : list):
@@ -187,6 +188,10 @@ class SMLE:
         dh_t_1 = self._math.dot_product(w_hh_T, dz)
         
         return grad_w, grad_h, grad_b, dh_t_1
+    
+        
+        
+        
     
     
     

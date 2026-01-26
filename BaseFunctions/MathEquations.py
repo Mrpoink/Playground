@@ -1,6 +1,12 @@
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 import math
 import random
-
 class Math:
     
     def __init__(self):
@@ -28,6 +34,10 @@ class Math:
         ## Element-wise, we parse through the existing matrix and find the sigmoid of that value
         
         return [[1.0 / (1.0 + math.exp(-value)) for value in row] for row in input]
+    
+    def sigmoid_der(self, input : list):
+        
+        return [[val * (1.0 - val) for val in row] for row in input]
     
     
     def dot_product(self, matrix_1 : list, matrix_2 : list):
@@ -161,8 +171,7 @@ class Math:
     def tanh(self, number):
         
         return (math.exp(number) - math.exp(-number)) / (math.exp(number) + math.exp(-number))
-    
-    
+  
     def matrix_tanh(self, matrix : list):
         
         for i in range(len(matrix)):
@@ -187,8 +196,7 @@ class Math:
     
     def matrix_tanh_derivative(self, input : list):
         
-        matrix_tahn = self.matrix_tanh(input)
-        squared = self.hadamard_product(matrix_tahn, matrix_tahn)
+        squared = self.hadamard_product(input, input)
         
         return self.matrix_subtraction_scalar(1.0, squared)
         

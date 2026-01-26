@@ -39,35 +39,73 @@ class RNN:
     def LSTM_forward(self, input : list):
         
         history = []
+        caches = []
         
         for x in input:
             
-            new_state, new_memory = self.LSTM_Neuron.activate_step(x, self.current_hidden_state, self.current_memory)
+            new_state, new_memory, cache = self.LSTM_Neuron.activate_step(x, self.current_hidden_state, self.current_memory)
             
             self.current_hidden_state = new_state
             self.current_memory = new_memory
             
             history.append(new_state)
+            caches.append(cache)
+            
 
-        return self.current_hidden_state, history
+        return self.current_hidden_state, history, caches
    
     def train_LSTM(self, train : list, test : list, epochs : int, learning_rate = 1e-5):
-        best_loss = 5000000.0
-        best_epoch = 0
         
-        state_history = []
-        
-        for epoch in epochs:
+        for epoch in range(epochs):
             
-            y_hat, _ = self.LSTM_forward(train)
+            self.current_hidden_state = _mle.get_blank_matrix(1, self.LSTM_Neuron.hidden_size, 0)
+            self.current_memory = _mle.get_blank_matrix(1, self.LSTM_Neuron.hidden_size, 0)
             
-            state_history.append(y_hat)
+            state, history, caches = self.LSTM_forward(train)
             
-            error = _mle.cce_deriv(y_hat, test)
+            loss = _mle.MSE_loss(state, test)
+            dh_n1 = _math.matrix_subtraction(state, test)
+            dC_n1 = _mle.get_blank_matrix(1, self.LSTM_Neuron.hidden_size, 0)
             
+            T = len(train)
             
-            
-        pass
+            for t in reversed(range(T)):
+                cache = caches[t]
+                
+                # Get gradients for this step
+                grads, dh_prev, dC_prev = self.LSTM_Neuron.BackPropagation_Step_RNN_LSTM(dh_n1, dC_n1, cache)
+                
+                # Apply Updates Immediately (Stochastic) or Accumulate 
+                # Here we Apply Immediately for simplicity of code
+                def apply(W, U, b, g_tuple):
+                    dW, dU, db = g_tuple
+                    W_new = _math.matrix_subtraction(W, _math.scalar_multiply(dW, learning_rate))
+                    U_new = _math.matrix_subtraction(U, _math.scalar_multiply(dU, learning_rate))
+                    b_new = _math.matrix_subtraction(b, _math.scalar_multiply(db, learning_rate))
+                    return W_new, U_new, b_new
+
+                # Update Forget Gate
+                self.LSTM_Neuron.F_w, self.LSTM_Neuron.F_h, self.LSTM_Neuron.F_b = \
+                    apply(self.LSTM_Neuron.F_w, self.LSTM_Neuron.F_h, self.LSTM_Neuron.F_b, grads["F"])
+                
+                # Update Input Gate
+                self.LSTM_Neuron.I_w, self.LSTM_Neuron.I_h, self.LSTM_Neuron.I_b = \
+                    apply(self.LSTM_Neuron.I_w, self.LSTM_Neuron.I_h, self.LSTM_Neuron.I_b, grads["I"])
+
+                # Update Candidate Gate
+                self.LSTM_Neuron.C_w, self.LSTM_Neuron.C_h, self.LSTM_Neuron.C_b = \
+                    apply(self.LSTM_Neuron.C_w, self.LSTM_Neuron.C_h, self.LSTM_Neuron.C_b, grads["C"])
+
+                # Update Output Gate
+                self.LSTM_Neuron.O_w, self.LSTM_Neuron.O_h, self.LSTM_Neuron.O_b = \
+                    apply(self.LSTM_Neuron.O_w, self.LSTM_Neuron.O_h, self.LSTM_Neuron.O_b, grads["O"])
+                
+                # Pass error back
+                dh_n1 = dh_prev
+                dC_n1 = dC_prev
+                
+            print(f"Epoch {epoch} LSTM Loss: {loss}")
+                
     
     def train_forward(self, train : list, test : list, epochs : int, learning_rate = 1e-5):
         
@@ -75,7 +113,7 @@ class RNN:
         
             state, history = self.forward(train)
             
-            pre_state = _mle.get_blank_matrix(1, 3, 0)
+            pre_state = _mle.get_blank_matrix(1, self.neuron.hidden_size, 0)
             history = [pre_state] + history
             
             error = _math.matrix_subtraction(state, test)
@@ -116,7 +154,7 @@ class RNN:
             self.neuron.bias = _math.matrix_subtraction(self.neuron.bias, step_b)
             
             overall_error = _mle.MSE_loss(state, test)
-            print(f"Epoch {epoch} Error: {overall_error}\n")
+            print(f"Epoch {epoch} Error: {overall_error}")
     
 
 
@@ -165,7 +203,7 @@ print(f"\n\n----------\nLSTM Implementation: \n")
     
 rnn = RNN(input_size=1, hidden_layers=3)
 
-final_state, history = rnn.LSTM_forward(input)
+final_state, history, caches = rnn.LSTM_forward(input)
 
 print(f"\n--------\nFinal State: \n")
 for row in final_state:
@@ -175,6 +213,8 @@ print(f"\n--------\nHistory: \n")
 for item in history:
     print(item)
     
-print("\n\n-----------\nTraining: \n")
+print("\n\n-----------\nTraining (Standard Implementation): \n")
 rnn.train_forward(input, output, 9, 0.1)
 
+print("\n\n-----------\nTraining (LSTM Implementation): \n")
+rnn.train_LSTM(input, output, 9, 0.1)

@@ -108,9 +108,9 @@ class LSTM(Neuron):
         
         ## Define the different gates at this current time
         f_t = _math.sigmoid(self.rnn_z(self.F_w, self.F_h, self.F_b, x, h))        
-        i_t = _math.sigmoid(self.rnn_z(self.I_w, self.I_h, self.I_b, x, c))        
-        c_t = _math.sigmoid(self.rnn_z(self.C_w, self.C_h, self.C_b, x, c))
-        o_t = _math.sigmoid(self.rnn_z(self.O_w, self.O_h, self.O_b, x, c))
+        i_t = _math.sigmoid(self.rnn_z(self.I_w, self.I_h, self.I_b, x, h))        
+        c_t = _math.matrix_tanh(self.rnn_z(self.C_w, self.C_h, self.C_b, x, h))
+        o_t = _math.sigmoid(self.rnn_z(self.O_w, self.O_h, self.O_b, x, h))
         
         ## Update them now  
         forget = _math.hadamard_product(f_t, c)
@@ -123,7 +123,87 @@ class LSTM(Neuron):
         
         h_new = _math.hadamard_product(o_t, c_tanh)
         
-        return h_new, c_t_1
+        cache = {
+            "f" : f_t,
+            "i" : i_t,
+            "c_t" : c_t,
+            "c_prev" : c ,
+            "c_new" : c_t_1,
+            "c_tanh" : c_tanh,
+            "x" : x,
+            "h_prev" : h,
+            "o" : o_t
+        }
+        
+        return h_new, c_t_1, cache
+    
+    def BackPropagation_Step_RNN_LSTM(self, dh, dc, cache):
+        
+        f, i, c_t, o = cache["f"], cache["i"], cache["c_t"], cache["o"]
+        c_prev, c_tanh = cache["c_prev"], cache["c_tanh"]
+        x, h_prev = cache["x"], cache["h_prev"]
+        
+        ## Calculate gate gradients
+        
+        ## Output
+        grad_o = _math.hadamard_product(dh, c_tanh)
+        d_o = _math.hadamard_product(grad_o, _math.sigmoid_der(o))
+        
+        ## States
+        grad_c = _math.hadamard_product(dh, o)
+        grad_c = _math.hadamard_product(grad_c, _math.matrix_tanh_derivative(c_tanh))
+        dC = _math.matrix_addition(dc, grad_c)
+        
+        # Memory
+        grad_ct = _math.hadamard_product(dC, i)
+        d_ct = _math.hadamard_product(grad_c, _math.matrix_tanh_derivative(c_t))
+        
+        # Input
+        grad_i = _math.hadamard_product(dC, c_t)
+        d_i = _math.hadamard_product(grad_i, _math.sigmoid_der(i))
+        
+        # Forget
+        grad_f = _math.hadamard_product(dC, c_prev)
+        d_f = _math.hadamard_product(grad_f, _math.sigmoid_der(f))
+        
+        # Time
+        x_T = _math.transpose(x)
+        h_T = _math.transpose(h_prev)
+        
+        
+        
+        ## I don't really want to make this into it's own ath function unless 
+        ## it comes in handy later
+        
+        def compute_grad(gate):
+            d_w = _math.dot_product(gate, x_T)
+            d_u = _math.dot_product(gate, h_T)
+            d_b = gate
+            return d_w, d_u, d_b
+        
+        def project(gate, hidden_weight):
+            return _math.dot_product(_math.transpose(hidden_weight), gate)
+        
+        grads = {
+            "F" : compute_grad(d_f),
+            "I" : compute_grad(d_i),
+            "C" : compute_grad(d_ct),
+            "O" : compute_grad(d_o)
+        }
+        
+        ## Time to actually propagate back over the course of 4 NEURONS
+        ## Man, I need soemthing better to do with my time
+        
+        dh_prev = dh_prev = [[0 for _ in range(len(h_prev[0]))] for _ in range(len(h_prev))]
+        dh_prev = _math.matrix_addition(dh_prev, project(d_f, self.F_h))
+        dh_prev = _math.matrix_addition(dh_prev, project(d_i, self.I_h))
+        dh_prev = _math.matrix_addition(dh_prev, project(d_ct, self.C_h))
+        dh_prev = _math.matrix_addition(dh_prev, project(d_o, self.O_h))
+        
+        dC_prev = _math.hadamard_product(dC, f)
+        
+        return grads, dh_prev, dC_prev
+        
         
         
         

@@ -8,8 +8,8 @@ sys.path.append(parent_dir)
 
 import math
 import random
-import MathStuff.MathEquations as MATH
-import FeedForward.NeuralNetwork as NN
+import BaseFunctions.MathEquations as MATH
+import BaseFunctions.NeuralNetwork as NN
 
 class SMLE:
     
@@ -19,14 +19,15 @@ class SMLE:
     
     def get_blank_matrix(self, N : int, M : int, number : int = None):
         matrix = [[_ for _ in range(N)] for _ in range(M)]
-        if number:
-            for i in range(N):
-                for j in range(M):
+      
+        if number is not None:
+            for i in range(M):
+                for j in range(N):
                     matrix[i][j] = number
         else:
-            for i in range(N):
-                for j in range(M):
-                    matrix[i][j] = 1
+            for i in range(M):
+                for j in range(N):
+                    matrix[i][j] = 0
         return matrix
     
     def LSE(self, input : list):
@@ -117,6 +118,22 @@ class SMLE:
             grad_matrix.append(gradient_row)
         
         return grad_matrix
+    
+    def MSE_loss(self, y_hat : list, y : list):
+        
+        total_loss = 0
+        
+        for i in range(len(y_hat)):
+            for j in range(len(y[0])):
+                
+                total_loss += 0.5 * ((y_hat[i][j] - y[i][j]) * (y_hat[i][j] - y[i][j]))
+                
+        return total_loss
+        
+        
+    def MSE_loss_der(self, y_hat : list, y : list):
+        
+        return sum(y_hat[i][j] - y[i][j] for i, j in (range(len(y_hat)), range(len(y))))     
         
     
     def sigmoid_derivative(self, matrix : list):
@@ -126,7 +143,9 @@ class SMLE:
         
         return self._math.hadamard_product(matrix, sub)
     
-    def BackPropogation_Step(self, output_node : NN.Neuron, loss : list, learning_rate : float):
+    
+    
+    def BackPropagation_Step(self, output_node : NN.Neuron, loss : list, learning_rate : float):
         
         sig_der = self.sigmoid_derivative(output_node.output)
         
@@ -148,6 +167,26 @@ class SMLE:
                 output_node.bias[i][j] = output_node.bias[i][j] - (learning_rate * delta[i][j])
                 
         return next_error
+    
+    def BackPropagation_Step_RNN(self, dh, x_t, h_t_1, h_t, hw):
+        
+        dtanh = self._math.matrix_tanh_derivative(h_t)
+        
+        dz = self._math.hadamard_product(dh, dtanh)
+        
+        T_input = self._math.transpose(x_t)
+        T_h_t_1 = self._math.transpose(h_t_1)
+        
+        grad_w = self._math.dot_product(dz, T_input)
+        
+        grad_h = self._math.dot_product(dz, T_h_t_1)
+        
+        grad_b = dz
+        
+        w_hh_T = self._math.transpose(hw)
+        dh_t_1 = self._math.dot_product(w_hh_T, dz)
+        
+        return grad_w, grad_h, grad_b, dh_t_1
     
     
     

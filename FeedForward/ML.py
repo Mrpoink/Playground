@@ -5,10 +5,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-import MathStuff.MathEquations as MATH
-import MathStuff.StandardMLEquations as MLE
-import NeuralNetwork as NN
+import BaseFunctions.MathEquations as MATH
+import BaseFunctions.StandardMLEquations as MLE
+import BaseFunctions.NeuralNetwork as NN
 import random
+from tqdm import tqdm
 
 _math = MATH.Math()
 _mle = MLE.SMLE()
@@ -34,22 +35,33 @@ class FeedForward:
     
     def train(self, train : list, test : list, epochs : int, learning_rate):
         
-        for epoch in range(epochs):
-            
-            y_hat = self.forward(train)
-            
-            if epoch % 10 == 0:
-                current_loss = _mle.CCEL(y_hat, test)
-                print(f"Epoch: {epoch} Loss: {current_loss}")
+        best_loss = 50000.0
+        best_epoch = 0
+        
+        with tqdm(total=epochs) as pbar:
+            for epoch in range(epochs):
                 
-            error = _mle.cce_deriv(y_hat, test)
-            
-            for layer in reversed(self.layers):
+                y_hat = self.forward(train)
                 
-                error = _mle.BackPropogation_Step(layer, error, learning_rate)
+                if epoch % 1 == 0:
+                    current_loss = _mle.CCEL(y_hat, test)
+                    if (current_loss < best_loss):
+                        best_loss = current_loss 
+                        best_epoch = epoch
+                    print(f"Epoch: {epoch} Loss: {current_loss}")
+                    
+                error = _mle.cce_deriv(y_hat, test)
+                
+                for layer in reversed(self.layers):
+                    
+                    error = _mle.BackPropagation_Step(layer, error, learning_rate)
+                    
+                pbar.update(1)
+        print("Best loss: ", best_loss)
+        print("Best epoch: ", best_epoch)
     
 
-ff = FeedForward(33)
+ff = FeedForward(10000000)
 
 
 input = _math.normalize([[random.random(), random.random(), random.random()], \
@@ -60,7 +72,7 @@ ground_truth = _math.normalize([[random.random(), random.random(), random.random
                 [random.random(), random.random(), random.random()]])
 
 print("Trying to train....")
-ff.train(input, ground_truth, epochs=45, learning_rate=0.1)
+ff.train(input, ground_truth, epochs=24, learning_rate=0.1)
 
 
 

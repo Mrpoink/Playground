@@ -40,11 +40,14 @@ class Math:
         row_1 = len(matrix_1)
         col_1 = len(matrix_1[0])
         
+        
         ## Second matrix
+        
         row_2 = len(matrix_2)
         col_2 = len(matrix_2[0])
         
         if col_1 != row_2:
+            print(f"Matrix 1: {row_1}x{col_1}\nMatrix 2: {row_2}x{col_2}")
             raise ValueError("Incompatible dimensions")
         
         final_matrix = [[0 for _ in range(col_2)] for _ in range(row_1)]
@@ -140,9 +143,55 @@ class Math:
                 
         return product
     
+    
     def transpose(self, matrix : list):
         
         return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
+    
+    def scalar_multiply(self, input : list, scalar):
+        
+        for i in range(len(input)):
+            for j in range(len(input[0])):
+                
+                input[i][j] = input[i][j] * scalar   
+                
+        return input     
+    
+    
+    def tanh(self, number):
+        
+        return (math.exp(number) - math.exp(-number)) / (math.exp(number) + math.exp(-number))
+    
+    
+    def matrix_tanh(self, matrix : list):
+        
+        for i in range(len(matrix)):
+            for j in range(len(matrix[0])):
+                
+                matrix[i][j] = self.tanh(matrix[i][j])
+                
+        return matrix
+    
+    def matrix_subtraction_scalar(self, scalar : float, input : list):
+        
+        rows = len(input)
+        cols = len(input[0])
+        
+        matrix = [[0 for _ in range(cols)] for _ in range(rows)]
+        
+        for i in range(rows):
+            for j in range(cols):
+                matrix[i][j] = scalar - input[i][j]
+                
+        return matrix
+    
+    def matrix_tanh_derivative(self, input : list):
+        
+        matrix_tahn = self.matrix_tanh(input)
+        squared = self.hadamard_product(matrix_tahn, matrix_tahn)
+        
+        return self.matrix_subtraction_scalar(1.0, squared)
+        
                 
         
     # def find_inverse(self, matrix : list):

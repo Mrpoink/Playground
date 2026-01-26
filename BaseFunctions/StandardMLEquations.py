@@ -189,8 +189,35 @@ class SMLE:
         
         return grad_w, grad_h, grad_b, dh_t_1
     
+    def tokenizer_dirty(self, train, test):
         
+        train_list = {}
+        test_list = {}
+        train = list(train)
         
+        for i in range(len(train)):
+            if i + 1 < len(train):
+                st = train[i] + train[i+1]
+                if st not in train_list.keys():
+                    train_list[st] = 1
+                else:
+                    train_list[st] += 1
+                
+        for i in range(len(test)):
+            if i + 1 < len(test):
+                st = test[i] + test[i+1]
+                if st not in test_list.keys():
+                    test_list[st] = 1
+                else:
+                    test_list[st] += 1
+            
+            
+        return train_list, test_list
+    
+        
+_smle = SMLE()
+
+print(_smle.tokenizer_dirty("We are adding and subtracting numbers yes; however", "As we multiply the positive weight with the positive inputs"))
         
     
     

@@ -214,7 +214,7 @@ for item in history:
     print(item)
     
 print("\n\n-----------\nTraining (Standard Implementation): \n")
-rnn.train_forward(input, output, 9, 0.1)
+rnn.train_forward(input, output, 30, 0.1)
 
 print("\n\n-----------\nTraining (LSTM Implementation): \n")
-rnn.train_LSTM(input, output, 9, 0.1)
+rnn.train_LSTM(input, output, 30, 0.1)

@@ -29,6 +29,7 @@ class SMLE:
                 for j in range(N):
                     matrix[i][j] = 0
         return matrix
+
     
     def LSE(self, input : list):
         ## This is used to calculate log(softmax(z))
@@ -87,6 +88,65 @@ class SMLE:
      
         return matrix
     
+    def softmax_vector(self, logits):
+        v = self._to_vec(logits)
+        if not v:
+            return [[0.0]]
+        m = max(v)
+        exps = [math.exp(x - m) for x in v]
+        s = sum(exps)
+        probs = [e / s for e in exps]
+        return self._to_col(probs)
+    
+    def _to_col(self, vec):
+        # [N] -> N x 1
+        return [[v] for v in vec]
+    
+    def _to_vec(self, mat):
+        # Flatten 1xN or Nx1 to [N]
+        if isinstance(mat, list):
+            if not mat:
+                return []
+            if isinstance(mat[0], list):
+                if len(mat) == 1:
+                    return mat[0]
+                if all(len(r) == 1 for r in mat):
+                    return [r[0] for r in mat]
+                raise ValueError("CCE expects a vector, got a 2D matrix")
+            return mat
+        return [mat]
+    
+    def vector_CCEL(self, p, y):
+        
+        pv = self._to_vec(p)
+        if isinstance(y, int):
+            if y < 0 or y >= len(pv):
+                raise ValueError(f"class index {y} out of range 0..{len(pv)-1}")
+            eps = 1e-12
+            return -math.log(max(pv[y], eps))
+        
+        yv = self._to_vec(y)
+        if len(pv) != len(yv):
+            raise ValueError(f"CCE shapes mismatch: p={len(pv)}, y={len(yv)}")
+        
+        eps = 1e-12
+        
+        return -sum(yv[i] * math.log(max(pv[i], eps)) for i in range(len(pv)))
+    
+    def vector_cce_der(self, p, y):
+        
+        pv = self._to_vec(p)
+        if isinstance(y, int):
+            yv = [0.0] * len(pv)
+            yv[y] = 1.0
+        else:
+            yv = self._to_vec(y)
+            if len(pv) != len(yv):
+                raise ValueError(f"CCE der mismatch: p={len(pv)}, y={len(yv)}")
+        diff = [pv[i] - yv[i] for i in range(len(pv))]
+        return self._to_col(diff)
+
+    
     def CCEL(self, y_hat, y : list):
         
         softmax_matrix = self.log_softmax(y_hat)
@@ -122,19 +182,32 @@ class SMLE:
     
     def MSE_loss(self, y_hat : list, y : list):
         
-        total_loss = 0
+        diff = self._math.matrix_subtraction(y_hat, y)
+        squared_diff = self._math.hadamard_product(diff, diff)
         
-        for i in range(len(y_hat)):
-            for j in range(len(y[0])):
-                
-                total_loss += 0.5 * ((y_hat[i][j] - y[i][j]) * (y_hat[i][j] - y[i][j]))
-                
-        return total_loss
+        total_loss = 0
+        for row in squared_diff:
+            total_loss += sum(row)
+                    
+        return total_loss / len(y_hat)
+    
+    def MSE_loss_matrix(self, y_hat: list, y : list):
+        
+        diff = self._math.matrix_subtraction(y_hat, y)
+        squared_diff = self._math.hadamard_product(diff, diff)
+        
+        new_matrix = []
+        
+        for row in squared_diff:
+            row_sum = sum(row)
+            new_matrix.append([row_sum / len(y_hat)])
+        
+        return new_matrix
         
         
     def MSE_loss_der(self, y_hat : list, y : list):
         
-        return sum(y_hat[i][j] - y[i][j] for i, j in (range(len(y_hat)), range(len(y))))     
+        return self._math.matrix_subtraction(y_hat, y)    
         
     
     def sigmoid_derivative(self, matrix : list):
@@ -169,56 +242,77 @@ class SMLE:
                 
         return next_error
     
-    def BackPropagation_Step_RNN(self, dh, x_t, h_t_1, h_t, hw):
-        
-        dtanh = self._math.matrix_tanh_derivative(h_t)
-        
-        dz = self._math.hadamard_product(dh, dtanh)
-        
-        T_input = self._math.transpose(x_t)
-        T_h_t_1 = self._math.transpose(h_t_1)
-        
-        grad_w = self._math.dot_product(dz, T_input)
-        
-        grad_h = self._math.dot_product(dz, T_h_t_1)
-        
-        grad_b = dz
-        
-        w_hh_T = self._math.transpose(hw)
-        dh_t_1 = self._math.dot_product(w_hh_T, dz)
-        
-        return grad_w, grad_h, grad_b, dh_t_1
-    
-    def tokenizer_dirty(self, train, test):
-        
-        train_list = {}
-        test_list = {}
-        train = list(train)
-        
-        for i in range(len(train)):
-            if i + 1 < len(train):
-                st = train[i] + train[i+1]
-                if st not in train_list.keys():
-                    train_list[st] = 1
-                else:
-                    train_list[st] += 1
-                
-        for i in range(len(test)):
-            if i + 1 < len(test):
-                st = test[i] + test[i+1]
-                if st not in test_list.keys():
-                    test_list[st] = 1
-                else:
-                    test_list[st] += 1
-            
-            
-        return train_list, test_list
-    
-        
-_smle = SMLE()
+    def BackPropagation_Step_RNN(self, dh, x_t, h_prev, h_t, U):
+        x_t = self._math.as_col(x_t)
+        h_prev = self._math.as_col(h_prev)
+        h_t = self._math.as_col(h_t)
+        dh = self._math.as_col(dh)
 
-print(_smle.tokenizer_dirty("We are adding and subtracting numbers yes; however", "As we multiply the positive weight with the positive inputs"))
+        dtanh = self._math.matrix_tanh_derivative(h_t)     # H x 1
+        dz = self._math.hadamard_product(dh, dtanh)        # H x 1
         
+        # print(f"Dimensions for dtanh and dh: {len(dtanh)}, {len(dtanh[0])}   {len(dh)}, {len(dh[0])}")
+
+        T_input = self._math.transpose(x_t)                # 1 x I
+        T_hprev = self._math.transpose(h_prev)             # 1 x H
+
+        grad_w = self._math.dot_product(dz, T_input)       # H x I
+        grad_h = self._math.dot_product(dz, T_hprev)       # H x H
+        grad_b = dz                                        # H x 1
+
+        dh_prev = self._math.dot_product(self._math.transpose(U), dz)  # H x 1
+        return grad_w, grad_h, grad_b, dh_prev
+
+    def flatten_output(self, history_states):
+        r'''
+        Best used for RNNs'''
+        predicted_indices = []
+        
+        for state_matrix in history_states:
+            
+            flat_vector = [row[0] for row in state_matrix]
+            
+            
+            best_index = flat_vector.index(max(flat_vector))
+            
+            predicted_indices.append(best_index)
+            
+        return predicted_indices
+    
+    def cosine_scheduler(self, epoch, total_epochs, steps, max, min):
+        
+        fraction = epoch / total_epochs
+        return min + 0.5 * (max - min) * (1 + math.cos(fraction * math.pi))
+    
+    def gradient_clip(self, matrix: list, threshold=1.0):
+        """Designed to reduce the explosive or vanshing gradients
+
+        Args:
+            matrix (list): gradient
+            threshold (float, optional): Determines range. Defaults to 1.0.
+
+        Returns:
+            matrix (list): clipped gradient
+        """
+        return [[max(min(val, threshold), -threshold) for val in row] for row in matrix]
+    
+    def generate_text(self, history, tokenizer):
+        
+        
+        predicted_text = ""
+        for state in history:
+            best_char = "?"
+            min_dist = float('inf')
+            
+            for char, idx in tokenizer.char_to_int.items():
+                emb = [[val] for val in tokenizer.lookup_table[idx]]
+                # Use your MSE_loss to find the closest match
+                dist = self.MSE_loss(state, emb)
+                if dist < min_dist:
+                    min_dist = dist
+                    best_char = char
+            predicted_text += best_char
+        return predicted_text
     
     
     

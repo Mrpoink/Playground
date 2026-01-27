@@ -20,17 +20,24 @@ class RNN:
         self.neuron = NN.Neuron(input_size=input_size, hidden_size=hidden_layers)
         self.LSTM_Neuron = NN.LSTM(input_size=input_size, hidden_size=hidden_layers)
         
-        self.current_hidden_state = _mle.get_blank_matrix(1, hidden_layers, 0)
-        self.current_memory = _mle.get_blank_matrix(1, hidden_layers, 0)
+        self.current_hidden_state = _mle.get_blank_matrix(hidden_layers, 1, 0.0)
+        self.current_memory = _mle.get_blank_matrix(hidden_layers, 1, 0.0)
+        
+        self.final_state = []
         
     def forward(self, input : list):
         history = []
         
+        # print("input: ", len(input), len(input[0]))
+        
         for time in input:
             
+            # print(len(time))
             new_state = self.neuron.activation_at_time(time, self.current_hidden_state)
             
             self.current_hidden_state = new_state
+            
+            self.final_state = new_state
             
             history.append(new_state)
                 
@@ -43,10 +50,14 @@ class RNN:
         
         for x in input:
             
+            # print("X: ", x)
+            
             new_state, new_memory, cache = self.LSTM_Neuron.activate_step(x, self.current_hidden_state, self.current_memory)
             
             self.current_hidden_state = new_state
             self.current_memory = new_memory
+            
+            self.final_state = new_state
             
             history.append(new_state)
             caches.append(cache)
@@ -58,9 +69,8 @@ class RNN:
         
         for epoch in range(epochs):
             
-            self.current_hidden_state = _mle.get_blank_matrix(1, self.LSTM_Neuron.hidden_size, 0)
-            self.current_memory = _mle.get_blank_matrix(1, self.LSTM_Neuron.hidden_size, 0)
-            
+            self.current_hidden_state = _mle.get_blank_matrix(self.LSTM_Neuron.hidden_size, 1, 0.0)
+            self.current_memory = _mle.get_blank_matrix(self.LSTM_Neuron.hidden_size, 1, 0.0)
             state, history, caches = self.LSTM_forward(train)
             
             loss = _mle.MSE_loss(state, test)
@@ -169,12 +179,12 @@ class RNN:
 ## And we continue to do this through the chain of neurons
 ## Hence, an explosive gradient
 
-rnn = RNN(input_size=1, hidden_layers=3)
+rnn_forward = RNN(input_size=1, hidden_layers=3)
 
 input = [
-    [[0.25]], 
-    [[0.75]],
-    [[0.65]]
+    [0.25], 
+    [0.75],
+    [0.65]
     ]
 
 output = [
@@ -183,7 +193,7 @@ output = [
     [0.25]
 ]
 
-final_state, history = rnn.forward(input)
+final_state, history = rnn_forward.forward(input)
 
 print(f"\n--------\nFinal State: \n")
 for row in final_state:
@@ -201,9 +211,9 @@ for item in history:
 
 print(f"\n\n----------\nLSTM Implementation: \n")
     
-rnn = RNN(input_size=1, hidden_layers=3)
+rnn_lstm = RNN(input_size=1, hidden_layers=3)
 
-final_state, history, caches = rnn.LSTM_forward(input)
+final_state, history, caches = rnn_lstm.LSTM_forward(input)
 
 print(f"\n--------\nFinal State: \n")
 for row in final_state:
@@ -214,7 +224,48 @@ for item in history:
     print(item)
     
 print("\n\n-----------\nTraining (Standard Implementation): \n")
-rnn.train_forward(input, output, 9, 0.1)
+rnn_forward.train_forward(input, output, 200, 0.1)
+
+final_state_forward, history = rnn_forward.forward(input)
+
+
 
 print("\n\n-----------\nTraining (LSTM Implementation): \n")
-rnn.train_LSTM(input, output, 9, 0.1)
+rnn_lstm.train_LSTM(input, output, 1600, 0.1)
+
+final_state_lstm, history, caches = rnn_lstm.LSTM_forward(input)
+
+
+timesteps = random.randint(1, 16)  # avoid 0-length
+
+input = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
+output = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
+
+print(len(input), len(input[0]))  # T, 1
+print(len(output), len(output[0]))
+
+# If you need a sorted copy, don't use in-place .sort()
+sorted_input = sorted(input, key=lambda r: r[0])
+
+# Model dims: input_size=1 (feature size), hidden_layers=H
+H = 3
+rnn_lstm_long = RNN(input_size=1, hidden_layers=len(input))
+
+# train_LSTM expects test to be H x 1; provide a target vector
+target = _mle.get_blank_matrix(1, H, 0.0)  # e.g., zeros
+
+rnn_lstm_long.train_LSTM(input, output, 1600, 0.1)
+
+rnn_lstm_long_final_state, history, caches = rnn_lstm_long.LSTM_forward(input)
+
+print(f"\n--------\nFinal State (Standard): \n")
+for row in final_state_forward:
+    print(row)
+
+print(f"\n--------\nFinal State (LSTM): \n")
+for row in final_state_lstm:
+    print(row)
+    
+print(f"\n--------\nFinal State (LSTM): \n")
+for row in rnn_lstm_long_final_state:
+    print(row)

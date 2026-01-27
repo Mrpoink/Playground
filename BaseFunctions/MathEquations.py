@@ -328,11 +328,11 @@ class Math:
         
         standardized_matrix = self.standardization(input)
         
-        print("Standardized dimension : ", len(standardized_matrix), len(standardized_matrix[0]))
+        #print("Standardized dimension : ", len(standardized_matrix), len(standardized_matrix[0]))
         
         cov = self.covariance(standardized_matrix)
         
-        print(f"dimension of conv: ", len(cov), len(cov[0]))
+        #print(f"dimension of conv: ", len(cov), len(cov[0]))
         
      
         eigen_value, principle_component = self.qr_decomposition_raw(cov)
@@ -348,7 +348,7 @@ class Math:
 
     def dot_product(self, matrix_1, matrix_2):
         # (A: m x n) · (B: n x p) => (m x p)
-        # print(f"dimensions from dot product: {len(matrix_1)}, {len(matrix_1[0])}    {len(matrix_2)}, {len(matrix_2[0])}")
+        #print(f"dimensions from dot product: {len(matrix_1)}, {len(matrix_1[0])}    {len(matrix_2)}, {len(matrix_2[0])}")
         if not matrix_1 or not matrix_2 or not isinstance(matrix_1[0], list) or not isinstance(matrix_2[0], list):
             raise ValueError("Inputs must be 2D lists")
         n1 = len(matrix_1[0])

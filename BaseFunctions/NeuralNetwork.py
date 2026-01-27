@@ -15,13 +15,13 @@ class Neuron:
     def __init__(self, input_size=3, hidden_size=3):
         self.input_size = input_size
         self.hidden_size = hidden_size
-        self.weight = _math.generate_random_matrix(hidden_size, input_size)
         
         # self.a = _math.normalize(self._generate_random_matrix(hidden_size, hidden_size))
         
-        self.bias = _math.get_blank_matrix(1, hidden_size, 0.0)
+        self.weight = [[random.uniform(-0.01, 0.01) for _ in range(input_size)] for _ in range(hidden_size)]
+        self.hidden_weight = [[random.uniform(-0.01, 0.01) for _ in range(hidden_size)] for _ in range(hidden_size)]
+        self.bias = [[0.0] for _ in range(hidden_size)]
         
-        self.hidden_weight = _math.generate_random_matrix(hidden_size, hidden_size)
         self.output = None
         self.input = None
         self.state = None
@@ -47,20 +47,22 @@ class Neuron:
     
     def rnn_z(self, weight, hidden, bias, input, prev_state):
         
+        #print(input)
        # Coerce to column vectors
         x = _math.as_col(input)
         h_1 = _math.as_col(prev_state)
 
-        # print("W: ", len(weight), len(weight[0]))
-        # print("U: ", len(hidden), len(hidden[0]))
-        # print("b: ", len(bias), len(bias[0]))
+        # print("W: ", len(weight), len(weight[0]), " value: ", weight)
+        # print("U: ", len(hidden), len(hidden[0]), " value: ", hidden)
+        # print("b: ", len(bias), len(bias[0]), " value: ", bias)
         # print("x: ", len(x), len(x[0]))
-        # print("h_prev: ", len(h_1), len(h_1[0]))
+        # print("h_prev: ", len(h_1), len(h_1[0]), " value: ", h_1)
 
+        
         wx = _math.dot_product(weight, x)      # (H x I) · (I x 1) -> (H x 1)
         uh = _math.dot_product(hidden, h_1)    # (H x H) · (H x 1) -> (H x 1)
-        # print("wx: ", len(wx), len(wx[0]))
-        # print("uh: ", len(uh), len(uh[0]))
+        # print("wx: ", len(wx), len(wx[0]), " value: ", wx)
+        # print("uh: ", len(uh), len(uh[0]), " value: ", uh)
         z = _math.matrix_addition(_math.matrix_addition(wx, uh), bias)  # (H x 1)
 
         # print("z: ", len(z), len(z[0]))
@@ -79,28 +81,28 @@ class Neuron:
 class LSTM(Neuron):
     
     def __init__(self, input_size = 1, hidden_size = 3):
-        self.input_size = input_size
-        self.hidden_size = hidden_size
+        super().__init__(input_size, hidden_size)
+        H, I = hidden_size, input_size
         
         # Forget Gate
-        self.F_w = _math.generate_random_matrix(self.input_size, self.hidden_size)
-        self.F_h = _math.generate_random_matrix(self.hidden_size, self.hidden_size)
-        self.F_b = [[0] for _ in range(hidden_size)]
+        self.F_w = [[random.uniform(-0.01, 0.01) for _ in range(I)] for _ in range(H)]
+        self.F_h = [[random.uniform(-0.01, 0.01) for _ in range(H)] for _ in range(H)]
+        self.F_b = [[0.0] for _ in range(H)]
         
         # Input Gate
-        self.I_w = _math.generate_random_matrix(self.input_size, self.hidden_size)
-        self.I_h = _math.generate_random_matrix(self.hidden_size, self.hidden_size)
-        self.I_b = [[0] for _ in range(hidden_size)]
+        self.I_w = [[random.uniform(-0.01, 0.01) for _ in range(I)] for _ in range(H)]
+        self.I_h = [[random.uniform(-0.01, 0.01) for _ in range(H)] for _ in range(H)]
+        self.I_b = [[0.0] for _ in range(H)]
         
         # Candidate (Memory) Weights
-        self.C_w = _math.generate_random_matrix(self.input_size, self.hidden_size)
-        self.C_h = _math.generate_random_matrix(self.hidden_size, self.hidden_size)
-        self.C_b = [[0] for _ in range(hidden_size)]
+        self.C_w = [[random.uniform(-0.01, 0.01) for _ in range(I)] for _ in range(H)]
+        self.C_h = [[random.uniform(-0.01, 0.01) for _ in range(H)] for _ in range(H)]
+        self.C_b = [[0.0] for _ in range(H)]
         
         # Output Weights
-        self.O_w = _math.generate_random_matrix(self.input_size, self.hidden_size)
-        self.O_h = _math.generate_random_matrix(self.hidden_size, self.hidden_size)
-        self.O_b = [[0] for _ in range(hidden_size)]
+        self.O_w = [[random.uniform(-0.01, 0.01) for _ in range(I)] for _ in range(H)]
+        self.O_h = [[random.uniform(-0.01, 0.01) for _ in range(H)] for _ in range(H)]
+        self.O_b = [[0.0] for _ in range(H)]
         
     def activate_step(self, input_at_time, prev_state, prev_mem):
         

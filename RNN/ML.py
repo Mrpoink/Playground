@@ -86,7 +86,7 @@ class RNN:
                 grads, dh_prev, dC_prev = self.LSTM_Neuron.BackPropagation_Step_RNN_LSTM(dh_n1, dC_n1, cache)
                 
                 # Apply Updates Immediately (Stochastic) or Accumulate 
-                # Here we Apply Immediately for simplicity of code
+                # Here we Apply Immediately for simplicity
                 def apply(W, U, b, g_tuple):
                     dW, dU, db = g_tuple
                     W_new = _math.matrix_subtraction(W, _math.scalar_multiply(dW, learning_rate))
@@ -126,7 +126,7 @@ class RNN:
             pre_state = _mle.get_blank_matrix(1, self.neuron.hidden_size, 0)
             history = [pre_state] + history
             
-            error = _math.matrix_subtraction(state, test)
+            error = _mle.MSE_loss_matrix(state, test)
             
             grad_w = [[0] for _ in range(self.neuron.hidden_size)]
             grad_h = _mle.get_blank_matrix(self.neuron.hidden_size, self.neuron.hidden_size, 0)
@@ -238,34 +238,57 @@ final_state_lstm, history, caches = rnn_lstm.LSTM_forward(input)
 
 timesteps = random.randint(1, 16)  # avoid 0-length
 
-input = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
-output = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
+long_input = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
+long_output = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
 
-print(len(input), len(input[0]))  # T, 1
-print(len(output), len(output[0]))
+print(len(long_input), len(long_input[0]))  # T, 1
+print(len(long_output), len(long_output[0]))
 
-# If you need a sorted copy, don't use in-place .sort()
 sorted_input = sorted(input, key=lambda r: r[0])
 
 # Model dims: input_size=1 (feature size), hidden_layers=H
 H = 3
-rnn_lstm_long = RNN(input_size=1, hidden_layers=len(input))
+rnn_lstm_long = RNN(input_size=1, hidden_layers=len(long_input))
+rnn_long = RNN(input_size = 1, hidden_layers=len(long_input))
 
 # train_LSTM expects test to be H x 1; provide a target vector
 target = _mle.get_blank_matrix(1, H, 0.0)  # e.g., zeros
 
-rnn_lstm_long.train_LSTM(input, output, 1600, 0.1)
+rnn_lstm_long.train_LSTM(long_input, long_output, 600, 0.01)
+rnn_long.train_forward(long_input, long_output, 600, 0.01)
 
-rnn_lstm_long_final_state, history, caches = rnn_lstm_long.LSTM_forward(input)
+rnn_lstm_long_final_state, history, caches = rnn_lstm_long.LSTM_forward(long_input)
+
+rnn_long_final_state, history = rnn_long.forward(long_input)
+
+print(f"\n--------\nStandard Test:")
+print("\nStandard: \n")
+for row in output:
+    print(row)
 
 print(f"\n--------\nFinal State (Standard): \n")
 for row in final_state_forward:
     print(row)
+    
+print("(Standard) Forward Loss: ", _mle.MSE_loss(final_state_forward, output))
 
 print(f"\n--------\nFinal State (LSTM): \n")
 for row in final_state_lstm:
     print(row)
+
+print("(LSTM) Forward Loss: ", _mle.MSE_loss(final_state_lstm, output))
     
-print(f"\n--------\nFinal State (LSTM): \n")
+print("\n---------\nLong Test: \n")
+for row in long_output:
+    print(row)
+    
+print(f"\n--------\nFinal State (LSTM-Long Context): \n")
 for row in rnn_lstm_long_final_state:
     print(row)
+    
+print("LSTM Long Loss (Final): ", _mle.MSE_loss(rnn_lstm_long_final_state, long_output))
+    
+print(f"\n--------\nFinal State (Standard-Long Context): \n")
+for row in rnn_long_final_state:
+    print(row) 
+print("Standard Long Loss (Final): ",_mle.MSE_loss(rnn_long_final_state, long_output))

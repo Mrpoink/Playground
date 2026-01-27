@@ -125,11 +125,13 @@ class RNN:
             # print("Logits: ", len(logits), len(logits[0]))
 
             probabilities = _mle.softmax(logits)
-            # print("Probabilities: ", len(probabilities), len(probabilities[0]))
+            print("Probabilities: ", len(probabilities), len(probabilities[0]))
             self.output = probabilities
+            print("Probabilities: ", probabilities)
 
             # Cross-entropy loss and dlogits (V x 1)
             loss = _mle.vector_CCEL(probabilities, idx)
+            # print("Loss: ", loss)
             dlogits = _mle.vector_cce_der(probabilities, idx)
             
             # Decoder grads
@@ -238,7 +240,7 @@ class RNN:
             
             
             
-            overall_error = _mle.MSE_loss(state, target_vec)
+            overall_error = _mle.MSE_loss_matrix(state, target_vec)
             print(f"Epoch {epoch} Error: {overall_error}")
     
 

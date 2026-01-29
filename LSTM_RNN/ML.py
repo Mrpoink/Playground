@@ -125,9 +125,8 @@ class RNN:
             # print("Logits: ", len(logits), len(logits[0]))
 
             probabilities = _mle.softmax(logits)
-            print("Probabilities: ", len(probabilities), len(probabilities[0]))
             self.output = probabilities
-            print("Probabilities: ", probabilities)
+            _math.print_matrix(probabilities, "Probabilities")
 
             # Cross-entropy loss and dlogits (V x 1)
             loss = _mle.vector_CCEL(probabilities, idx)
@@ -299,13 +298,10 @@ rnn = RNN(input_size=tokenizer.vocab_size, hidden_layers=tokenizer.embedding_dim
 
 final_state, history, caches = rnn.LSTM_forward(training_data)
 
-print(f"\n--------\nFinal State: \n")
-for row in final_state:
-    print(row)
+_math.print_matrix(final_state, "Final State")
 
-print(f"\n--------\nHistory: \n")
-for item in history:
-    print(item)
+for idx, item in enumerate(history):
+    _math.print_matrix(item, f"History[{idx}]")
     
 print("\n\n-----------\nTraining (Standard Implementation): \n")
 rnn.train_forward(training_data, test_data, 30, 0.1)

@@ -58,7 +58,7 @@ class Embedding(Tokenizer):
     def get_embedding(self, token_id):
         
         ## Looks up the embedding in the existing table
-        print([self.lookup_table[token_id]])
+        _math.print_matrix([self.lookup_table[token_id]], "Embedding")
         return [self.lookup_table[token_id]]
     
     def update_embedding(self, token_id, error, learning_rate):

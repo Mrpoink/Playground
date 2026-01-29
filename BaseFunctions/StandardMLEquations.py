@@ -16,6 +16,7 @@ class SMLE:
     def __init__(self):
         self._math = MATH.Math()
         pass
+
     
     def get_blank_matrix(self, N : int, M : int, number : int = None):
         matrix = [[_ for _ in range(N)] for _ in range(M)]

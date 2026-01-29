@@ -29,6 +29,17 @@ class Math:
             
         return normalized_matrix 
     
+    def print_matrix(self, input, name):
+        
+        H = len(input)
+        I = len(input[0])
+        
+        print(f"{name} Size (H x I): {H}, {I}")
+        for i in range(H):
+            print(f"{i}.")
+            for j in range(I):
+                print(f"{input[i][j]}")
+    
     def vector_norm(self, v):
         return math.sqrt(sum(x**2 for x in v))
     
@@ -220,8 +231,8 @@ class Math:
         N_2, M_2 = len(matrix_2), len(matrix_2[0])
         
         if (N_1 != N_2) or (M_1 != M_2):
-            print(N_1, M_1)
-            print(N_2, M_2)
+            self.print_matrix([[N_1, M_1]], "Addition lhs dims")
+            self.print_matrix([[N_2, M_2]], "Addition rhs dims")
             raise ValueError("For some reason, you can't add these, check the dimensions")
         
         final_matrix = [[0 for _ in range(M_2)] for _ in range(N_1)]
@@ -239,8 +250,8 @@ class Math:
         N_2, M_2 = len(matrix_2), len(matrix_2[0])
         
         if (N_1 != N_2) or (M_1 != M_2):
-            print(N_1, M_1)
-            print(N_2, M_2)
+            self.print_matrix([[N_1, M_1]], "Subtraction lhs dims")
+            self.print_matrix([[N_2, M_2]], "Subtraction rhs dims")
             raise ValueError("For some reason, you can't add these, check the dimensions")
         
         final_matrix = [[0 for _ in range(M_2)] for _ in range(N_1)]

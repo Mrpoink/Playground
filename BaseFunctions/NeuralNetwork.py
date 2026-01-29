@@ -39,7 +39,7 @@ class Neuron:
         return self.state
     
     def activation_at_time(self, input : list, prev_state):
-        # print(f"dimensions of input: {len(input)}, {len(input[0])}")
+        _math.print_matrix(input, "activation input")
         z = self.rnn_z(self.weight, self.hidden_weight, self.bias, input, prev_state)
         self.state = _math.matrix_tanh(z)
          
@@ -52,20 +52,20 @@ class Neuron:
         x = _math.as_col(input)
         h_1 = _math.as_col(prev_state)
 
-        # print("W: ", len(weight), len(weight[0]), " value: ", weight)
-        # print("U: ", len(hidden), len(hidden[0]), " value: ", hidden)
-        # print("b: ", len(bias), len(bias[0]), " value: ", bias)
-        # print("x: ", len(x), len(x[0]))
-        # print("h_prev: ", len(h_1), len(h_1[0]), " value: ", h_1)
+        _math.print_matrix(weight, "weight")
+        _math.print_matrix(hidden, "hidden")
+        _math.print_matrix(bias, "bias")
+        _math.print_matrix(x, "x for z")
+        _math.print_matrix(h_1, "h_1")
 
         
         wx = _math.dot_product(weight, x)      # (H x I) · (I x 1) -> (H x 1)
         uh = _math.dot_product(hidden, h_1)    # (H x H) · (H x 1) -> (H x 1)
-        # print("wx: ", len(wx), len(wx[0]), " value: ", wx)
-        # print("uh: ", len(uh), len(uh[0]), " value: ", uh)
+        _math.print_matrix(wx, "wx")
+        _math.print_matrix(uh, "uh")
         z = _math.matrix_addition(_math.matrix_addition(wx, uh), bias)  # (H x 1)
 
-        # print("z: ", len(z), len(z[0]))
+        _math.print_matrix(z, "z")
         return z
     
     def get_activation(self):
@@ -113,9 +113,9 @@ class LSTM(Neuron):
         h = _math.reshape(prev_state)
         c = _math.reshape(prev_mem)
         
-        # print(f"\nx dimensions in step: {len(x)}, {len(x[0])}\n")
-        # print(f"\nh dimensions in step: {len(h)}, {len(h[0])}\n")
-        # print(f"\nc dimensions in step: {len(c)}, {len(c[0])}\n")
+        _math.print_matrix(x, "x in step")
+        _math.print_matrix(h, "h in step")
+        _math.print_matrix(c, "c in step")
         
         ## Define the different gates at this current time
         f_t = _math.sigmoid(self.rnn_z(self.F_w, self.F_h, self.F_b, x, h))        

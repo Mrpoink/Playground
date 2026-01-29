@@ -195,13 +195,10 @@ output = [
 
 final_state, history = rnn_forward.forward(input)
 
-print(f"\n--------\nFinal State: \n")
-for row in final_state:
-    print(row)
+_math.print_matrix(final_state, "Final State")
 
-print(f"\n--------\nHistory: \n")
-for item in history:
-    print(item)
+for idx, item in enumerate(history):
+    _math.print_matrix(item, f"History[{idx}]")
 
 
 ## This is the logic for the Long Short Term Memory as designed
@@ -215,13 +212,10 @@ rnn_lstm = RNN(input_size=1, hidden_layers=3)
 
 final_state, history, caches = rnn_lstm.LSTM_forward(input)
 
-print(f"\n--------\nFinal State: \n")
-for row in final_state:
-    print(row)
+_math.print_matrix(final_state, "Final State")
 
-print(f"\n--------\nHistory: \n")
-for item in history:
-    print(item)
+for idx, item in enumerate(history):
+    _math.print_matrix(item, f"History[{idx}]")
     
 print("\n\n-----------\nTraining (Standard Implementation): \n")
 rnn_forward.train_forward(input, output, 200, 0.1)
@@ -241,8 +235,8 @@ timesteps = random.randint(1, 16)  # avoid 0-length
 long_input = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
 long_output = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
 
-print(len(long_input), len(long_input[0]))  # T, 1
-print(len(long_output), len(long_output[0]))
+_math.print_matrix(long_input, "Long Input")
+_math.print_matrix(long_output, "Long Output")
 
 sorted_input = sorted(input, key=lambda r: r[0])
 

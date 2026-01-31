@@ -9,6 +9,7 @@ import BaseFunctions.MathEquations as MATH
 import BaseFunctions.StandardMLEquations as MLE
 import BaseFunctions.NeuralNetwork as NN
 import BaseFunctions.BaseTokenizer as Tokenizer
+import Coders.Attention
 import random
 import math
 
@@ -17,40 +18,19 @@ _mle = MLE.SMLE()
 
 class Encoder:
     
-    def __init__(self, hidden_size, input_size):
+    def __init__(self, Q, K):
         
         ## Main Equation:
-        # h_t = tanh((W * x_t) + (U * h_t-1) + b)
-        # W = input_weight
-        # U = hidden_weight
-        # b = bias
+        # Q is the query, the positional embedding
+        # K is the key, the size of the input
+        # V is the value, I think the actual value....
         #
-        #
-        self.hidden_weight = [[random.uniform(-0.01, 0.01) for _ in range(hidden_size)] for _ in range(hidden_size)]
-        self.weight = [[random.uniform(-0.01, 0.01) for _ in range(input_size)] for _ in range(hidden_size)]
-        self.bias = [[0.0] for _ in range(hidden_size)]
+        self.key = [0.0 for _ in range(len(K))]
+        self.q = [0.0 for _ in range(len(Q))]
         
-        self.input = None
-        self.output = None
-        self.state = None
+    def read(self, input):
         
-    def forward(self, x):
-        ## This is a basic forward pass function
-        ## Such as the one in the OG RNN class
-        
-        if self.state is None:
-            self.state = [[0.0] for _ in range(len(self.hidden_weight))]
-        
-        wx = _math.dot_product(self.weight, x)
-        uh = _math.dot_product(self.hidden_weight, self.state)
-        
-        htan = _math.matrix_addition(_math.matrix_addition(wx, uh), self.bias)
-        
-        ht = _math.matrix_tanh(htan)
-        
-        self.state = ht
-        
-        return ht
+        attention = 
     
     def process_sequence(self, input_sequence):
         

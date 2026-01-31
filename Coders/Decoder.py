@@ -18,5 +18,5 @@ _mle = MLE.SMLE()
 
 class Decoder:
     
-    def __init__(self):
-        pass
+    def __init__(self, key_dim, query):
+        self.key = key_dim

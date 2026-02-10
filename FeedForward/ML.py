@@ -52,9 +52,9 @@ class FeedForward:
                     
                 error = _mle.cce_deriv(y_hat, test)
                 
-                for layer in reversed(self.layers):
-                    
-                    error = _mle.BackPropagation_Step(layer, error, learning_rate)
+                for i, layer in enumerate(reversed(self.layers)):
+                    is_final = (i == 0)
+                    error = _mle.BackPropagation_Step(layer, error, learning_rate, is_final=is_final)
                     
                 pbar.update(1)
         print("Best loss: ", best_loss)

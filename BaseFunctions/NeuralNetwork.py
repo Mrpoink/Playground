@@ -23,6 +23,7 @@ class Neuron:
         self.output = None
         self.input = None
         self.state = None
+        self.z = None
         
         
     def get_weight(self):

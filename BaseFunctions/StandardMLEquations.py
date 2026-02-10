@@ -220,28 +220,52 @@ class SMLE:
     
     
     
-    def BackPropagation_Step(self, output_node : NN.Neuron, loss : list, learning_rate : float):
+    def BackPropagation_Step(self, output_node : NN.Neuron, loss : list, learning_rate : float, is_final = False):
         
-        sig_der = self.sigmoid_derivative(output_node.output)
+        a_prev = output_node.input          # (I x B)
+        y_hat = output_node.output          # (H x B)
+        z = output_node.z                   # (H x B)
         
-        delta = self._math.hadamard_product(loss, sig_der)
+        H = len(y_hat)
+        B = len(y_hat[0])
         
-        weight_t = self._math.transpose(output_node.weight)
-        next_error = self._math.dot_product(weight_t, delta)
+        if is_final:
+            delta = loss
+            
+        else:
+            
+            # sigmoid` (z) = y_hat * (1 - y_hat)
+            sigma_prime = [[y_hat[i][j] * (1.0 - y_hat[i][j]) for j in range(B)] for i in range(H)]
+            # This is the delta (change) constant for the weights given the error
+            delta = self._math.hadamard_product(loss, sigma_prime) # (H x B)
         
-        input_t = self._math.transpose(output_node.input)
-        weight_gradient = self._math.dot_product(delta, input_t)
+        # Transpose previous input
+        a_prev_t = self._math.transpose(a_prev)     # (B x I)
+        # Find delta for weights
+        dW = self._math.matrix_multiply(delta, a_prev_t)    # (H x I)
         
-        for i in range(len(output_node.weight)):
-            for j in range(len(output_node.weight[0])):
-                change = learning_rate * weight_gradient[i][j]
-                output_node.weight[i][j] = output_node.weight[i][j] - change
-                
-        for i in range(len(output_node.bias)):
-            for j in range(len(output_node.bias[0])):
-                output_node.bias[i][j] = output_node.bias[i][j] - (learning_rate * delta[i][j])
-                
-        return next_error
+        # db = sum over batch (Bias update)
+        db = [[sum(delta[i])] for i in range(H)]        # (H x 1)
+        
+        # Now to start updating the weights with thier corresponding changes
+        output_node.weight = self._math.matrix_subtraction(
+            output_node.weight,
+            self._math.scalar_multiply(dW, learning_rate)
+            )
+        
+        output_node.bias = self._math.matrix_subtraction(
+            output_node.bias,
+            self._math.scalar_multiply(db, learning_rate)
+        )
+        
+        # Propagate error: error_prev = W^T @ delta
+        W_T = self._math.transpose(output_node.weight)  # (I x H)
+        error_prev = self._math.matrix_multiply(W_T, delta)  # (I x B)
+        
+        return error_prev
+        
+        
+        
     
     def BackPropagation_Step_RNN(self, dh, x_t, h_prev, h_t, U):
         x_t = self._math.as_col(x_t)

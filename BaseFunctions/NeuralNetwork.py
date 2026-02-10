@@ -39,7 +39,7 @@ class Neuron:
         return self.state
     
     def activation_at_time(self, input : list, prev_state):
-        _math.print_matrix(input, "activation input")
+        #_math.print_matrix(input, "activation input")
         z = self.rnn_z(self.weight, self.hidden_weight, self.bias, input, prev_state)
         self.state = _math.matrix_tanh(z)
          
@@ -52,20 +52,20 @@ class Neuron:
         x = _math.as_col(input)
         h_1 = _math.as_col(prev_state)
 
-        _math.print_matrix(weight, "weight")
-        _math.print_matrix(hidden, "hidden")
-        _math.print_matrix(bias, "bias")
-        _math.print_matrix(x, "x for z")
-        _math.print_matrix(h_1, "h_1")
+        # _math.print_matrix(weight, "weight")
+        # _math.print_matrix(hidden, "hidden")
+        # _math.print_matrix(bias, "bias")
+        # _math.print_matrix(x, "x for z")
+        # _math.print_matrix(h_1, "h_1")
 
         
         wx = _math.dot_product(weight, x)      # (H x I) · (I x 1) -> (H x 1)
         uh = _math.dot_product(hidden, h_1)    # (H x H) · (H x 1) -> (H x 1)
-        _math.print_matrix(wx, "wx")
-        _math.print_matrix(uh, "uh")
+        # _math.print_matrix(wx, "wx")
+        # _math.print_matrix(uh, "uh")
         z = _math.matrix_addition(_math.matrix_addition(wx, uh), bias)  # (H x 1)
 
-        _math.print_matrix(z, "z")
+        #_math.print_matrix(z, "z")
         return z
     
     def get_activation(self):
@@ -113,9 +113,9 @@ class LSTM(Neuron):
         h = _math.reshape(prev_state)
         c = _math.reshape(prev_mem)
         
-        _math.print_matrix(x, "x in step")
-        _math.print_matrix(h, "h in step")
-        _math.print_matrix(c, "c in step")
+        # _math.print_matrix(x, "x in step")
+        # _math.print_matrix(h, "h in step")
+        # _math.print_matrix(c, "c in step")
         
         ## Define the different gates at this current time
         f_t = _math.sigmoid(self.rnn_z(self.F_w, self.F_h, self.F_b, x, h))        

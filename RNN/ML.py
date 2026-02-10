@@ -18,7 +18,6 @@ class RNN:
     
     def __init__(self, hidden_layers : int, input_size : int):
         self.neuron = NN.Neuron(input_size=input_size, hidden_size=hidden_layers)
-        self.LSTM_Neuron = NN.LSTM(input_size=input_size, hidden_size=hidden_layers)
         
         self.current_hidden_state = _mle.get_blank_matrix(hidden_layers, 1, 0.0)
         self.current_memory = _mle.get_blank_matrix(hidden_layers, 1, 0.0)
@@ -43,78 +42,6 @@ class RNN:
                 
         return self.current_hidden_state, history
     
-    def LSTM_forward(self, input : list):
-        
-        history = []
-        caches = []
-        
-        for x in input:
-            
-            # print("X: ", x)
-            
-            new_state, new_memory, cache = self.LSTM_Neuron.activate_step(x, self.current_hidden_state, self.current_memory)
-            
-            self.current_hidden_state = new_state
-            self.current_memory = new_memory
-            
-            self.final_state = new_state
-            
-            history.append(new_state)
-            caches.append(cache)
-            
-
-        return self.current_hidden_state, history, caches
-   
-    def train_LSTM(self, train : list, test : list, epochs : int, learning_rate = 1e-5):
-        
-        for epoch in range(epochs):
-            
-            self.current_hidden_state = _mle.get_blank_matrix(self.LSTM_Neuron.hidden_size, 1, 0.0)
-            self.current_memory = _mle.get_blank_matrix(self.LSTM_Neuron.hidden_size, 1, 0.0)
-            state, history, caches = self.LSTM_forward(train)
-            
-            loss = _mle.MSE_loss(state, test)
-            dh_n1 = _math.matrix_subtraction(state, test)
-            dC_n1 = _mle.get_blank_matrix(1, self.LSTM_Neuron.hidden_size, 0)
-            
-            T = len(train)
-            
-            for t in reversed(range(T)):
-                cache = caches[t]
-                
-                # Get gradients for this step
-                grads, dh_prev, dC_prev = self.LSTM_Neuron.BackPropagation_Step_RNN_LSTM(dh_n1, dC_n1, cache)
-                
-                # Apply Updates Immediately (Stochastic) or Accumulate 
-                # Here we Apply Immediately for simplicity
-                def apply(W, U, b, g_tuple):
-                    dW, dU, db = g_tuple
-                    W_new = _math.matrix_subtraction(W, _math.scalar_multiply(dW, learning_rate))
-                    U_new = _math.matrix_subtraction(U, _math.scalar_multiply(dU, learning_rate))
-                    b_new = _math.matrix_subtraction(b, _math.scalar_multiply(db, learning_rate))
-                    return W_new, U_new, b_new
-
-                # Update Forget Gate
-                self.LSTM_Neuron.F_w, self.LSTM_Neuron.F_h, self.LSTM_Neuron.F_b = \
-                    apply(self.LSTM_Neuron.F_w, self.LSTM_Neuron.F_h, self.LSTM_Neuron.F_b, grads["F"])
-                
-                # Update Input Gate
-                self.LSTM_Neuron.I_w, self.LSTM_Neuron.I_h, self.LSTM_Neuron.I_b = \
-                    apply(self.LSTM_Neuron.I_w, self.LSTM_Neuron.I_h, self.LSTM_Neuron.I_b, grads["I"])
-
-                # Update Candidate Gate
-                self.LSTM_Neuron.C_w, self.LSTM_Neuron.C_h, self.LSTM_Neuron.C_b = \
-                    apply(self.LSTM_Neuron.C_w, self.LSTM_Neuron.C_h, self.LSTM_Neuron.C_b, grads["C"])
-
-                # Update Output Gate
-                self.LSTM_Neuron.O_w, self.LSTM_Neuron.O_h, self.LSTM_Neuron.O_b = \
-                    apply(self.LSTM_Neuron.O_w, self.LSTM_Neuron.O_h, self.LSTM_Neuron.O_b, grads["O"])
-                
-                # Pass error back
-                dh_n1 = dh_prev
-                dC_n1 = dC_prev
-                
-            print(f"Epoch {epoch} LSTM Loss: {loss}")
                 
     
     def train_forward(self, train : list, test : list, epochs : int, learning_rate = 1e-5):
@@ -206,16 +133,10 @@ for idx, item in enumerate(history):
 ## I think you can guess what my next implementation will be (after propogation)
 
 
-print(f"\n\n----------\nLSTM Implementation: \n")
-    
-rnn_lstm = RNN(input_size=1, hidden_layers=3)
+# _math.print_matrix(final_state, "Final State")
 
-final_state, history, caches = rnn_lstm.LSTM_forward(input)
-
-_math.print_matrix(final_state, "Final State")
-
-for idx, item in enumerate(history):
-    _math.print_matrix(item, f"History[{idx}]")
+# for idx, item in enumerate(history):
+#     _math.print_matrix(item, f"History[{idx}]")
     
 print("\n\n-----------\nTraining (Standard Implementation): \n")
 rnn_forward.train_forward(input, output, 200, 0.1)
@@ -223,35 +144,24 @@ rnn_forward.train_forward(input, output, 200, 0.1)
 final_state_forward, history = rnn_forward.forward(input)
 
 
-
-print("\n\n-----------\nTraining (LSTM Implementation): \n")
-rnn_lstm.train_LSTM(input, output, 1600, 0.1)
-
-final_state_lstm, history, caches = rnn_lstm.LSTM_forward(input)
-
-
 timesteps = random.randint(1, 16)  # avoid 0-length
 
 long_input = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
 long_output = [[random.uniform(-1.0, 1.0)] for _ in range(timesteps)]
 
-_math.print_matrix(long_input, "Long Input")
-_math.print_matrix(long_output, "Long Output")
+# _math.print_matrix(long_input, "Long Input")
+# _math.print_matrix(long_output, "Long Output")
 
 sorted_input = sorted(input, key=lambda r: r[0])
 
 # Model dims: input_size=1 (feature size), hidden_layers=H
 H = 3
-rnn_lstm_long = RNN(input_size=1, hidden_layers=len(long_input))
 rnn_long = RNN(input_size = 1, hidden_layers=len(long_input))
 
 # train_LSTM expects test to be H x 1; provide a target vector
 target = _mle.get_blank_matrix(1, H, 0.0)  # e.g., zeros
 
-rnn_lstm_long.train_LSTM(long_input, long_output, 600, 0.01)
 rnn_long.train_forward(long_input, long_output, 600, 0.01)
-
-rnn_lstm_long_final_state, history, caches = rnn_lstm_long.LSTM_forward(long_input)
 
 rnn_long_final_state, history = rnn_long.forward(long_input)
 
@@ -266,21 +176,12 @@ for row in final_state_forward:
     
 print("(Standard) Forward Loss: ", _mle.MSE_loss(final_state_forward, output))
 
-print(f"\n--------\nFinal State (LSTM): \n")
-for row in final_state_lstm:
-    print(row)
 
-print("(LSTM) Forward Loss: ", _mle.MSE_loss(final_state_lstm, output))
     
 print("\n---------\nLong Test: \n")
 for row in long_output:
     print(row)
     
-print(f"\n--------\nFinal State (LSTM-Long Context): \n")
-for row in rnn_lstm_long_final_state:
-    print(row)
-    
-print("LSTM Long Loss (Final): ", _mle.MSE_loss(rnn_lstm_long_final_state, long_output))
     
 print(f"\n--------\nFinal State (Standard-Long Context): \n")
 for row in rnn_long_final_state:

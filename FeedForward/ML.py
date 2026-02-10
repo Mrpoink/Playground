@@ -61,7 +61,7 @@ class FeedForward:
         print("Best epoch: ", best_epoch)
     
 
-ff = FeedForward(10000000)
+ff = FeedForward(1000)
 
 
 input = _math.normalize([[random.random(), random.random(), random.random()], \
@@ -72,7 +72,7 @@ ground_truth = _math.normalize([[random.random(), random.random(), random.random
                 [random.random(), random.random(), random.random()]])
 
 print("Trying to train....")
-ff.train(input, ground_truth, epochs=24, learning_rate=0.1)
+ff.train(input, ground_truth, epochs=300, learning_rate=0.1)
 
 
 

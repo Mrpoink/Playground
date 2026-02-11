@@ -8,6 +8,7 @@ sys.path.append(parent_dir)
 import BaseFunctions.MathEquations as MATH
 import BaseFunctions.StandardMLEquations as MLE
 import BaseFunctions.NeuralNetwork as NN
+import BaseFunctions.AVS as AVS
 import random
 from tqdm import tqdm
 
@@ -17,8 +18,9 @@ _mle = MLE.SMLE()
 
 class FeedForward:
     
-    def __init__(self, layers : int):
-        self.layers = [NN.Neuron() for _ in range(layers)]
+    def __init__(self, layers : int, input_size = 3):
+        self.layers = [NN.Neuron(input_size=input_size) for _ in range(layers)]
+        self.best_layers = []
         
     def forward(self, input : list):
             
@@ -37,44 +39,67 @@ class FeedForward:
         
         best_loss = 50000.0
         best_epoch = 0
+        current_loss = 49999
+        
+        lrs = AVS.AV_Scheduler(learning_rate)
         
         with tqdm(total=epochs) as pbar:
             for epoch in range(epochs):
                 
                 y_hat = self.forward(train)
+                    
+                error = _mle.MSE_loss_der(y_hat, test)
+                current_loss = _math.frobenius_norm(error)
+                lrs.step(current_loss)
                 
                 if epoch % 1 == 0:
-                    current_loss = _mle.CCEL(y_hat, test)
                     if (current_loss < best_loss):
                         best_loss = current_loss 
                         best_epoch = epoch
+                        self.best_layers = self.layers
                     print(f"Epoch: {epoch} Loss: {current_loss}")
-                    
-                error = _mle.cce_deriv(y_hat, test)
                 
-                for i, layer in enumerate(reversed(self.layers)):
+                
+                i = len(self.layers) - 1
+                while i > 0:
                     is_final = (i == 0)
-                    error = _mle.BackPropagation_Step(layer, error, learning_rate, is_final=is_final)
+                    error = _mle.gradient_clip(error, threshold=1.0)
+                    error = _mle.BackPropagation_Step(self.layers[i], 
+                                                      error,
+                                                      lrs.lr, 
+                                                      is_final=is_final
+                                                      )
+                    i-=1
                     
                 pbar.update(1)
         print("Best loss: ", best_loss)
         print("Best epoch: ", best_epoch)
     
 
-ff = FeedForward(1000)
+
 
 
 input = _math.normalize([[random.random(), random.random(), random.random()], \
         [random.random(), random.random(), random.random()], \
+        [random.random(), random.random(), random.random()],
+        [random.random(), random.random(), random.random()], \
+        [random.random(), random.random(), random.random()], \
         [random.random(), random.random(), random.random()]])
 ground_truth = _math.normalize([[random.random(), random.random(), random.random()], \
-                [random.random(), random.random(), random.random()], \
-                [random.random(), random.random(), random.random()]])
+        [random.random(), random.random(), random.random()], \
+        [random.random(), random.random(), random.random()],
+        [random.random(), random.random(), random.random()], \
+        [random.random(), random.random(), random.random()], \
+        [random.random(), random.random(), random.random()]])
+
+ff = FeedForward(32, input_size=len(input))
 
 print("Trying to train....")
-ff.train(input, ground_truth, epochs=300, learning_rate=0.1)
+ff.train(input, ground_truth, epochs=500, learning_rate=0.01)
 
+ff.layers = ff.best_layers
 
+print(ff.forward(input))
 
 # print("\n\n--------------\n\nInput: \n")
 # for row in input:

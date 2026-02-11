@@ -247,6 +247,10 @@ class SMLE:
         # db = sum over batch (Bias update)
         db = [[sum(delta[i])] for i in range(H)]        # (H x 1)
         
+        # prevent exploding gradients
+        dW = self.gradient_clip(dW, threshold=1.0)
+        db = self.gradient_clip(db, threshold=1.0)
+        
         # Now to start updating the weights with thier corresponding changes
         output_node.weight = self._math.matrix_subtraction(
             output_node.weight,
@@ -304,7 +308,13 @@ class SMLE:
             
         return predicted_indices
     
-    def cosine_scheduler(self, epoch, total_epochs, steps, max, min):
+    def cosine_scheduler(self, epoch, total_epochs, max, min):
+        r'''
+        epoch: current epoch
+        total_epochs: total epochs
+        max: Max learning rate
+        min: minimum learning rate
+        returns: a float for a learning rate'''
         
         fraction = epoch / total_epochs
         return min + 0.5 * (max - min) * (1 + math.cos(fraction * math.pi))

@@ -29,6 +29,29 @@ class Math:
             
         return normalized_matrix 
     
+    def std_dev(self, input : list, sample = False):
+        
+        total = 0
+        n = len(input)
+        mean = sum(input) / n
+        
+        for point in input:
+            total += (point - mean) ** 2
+        
+        if sample:
+            return math.sqrt(total / n)
+        else:
+            return math.sqrt(total / (n-1))
+        
+        
+        
+        for item in input:
+            total += item
+            
+        
+        
+        
+    
     def print_matrix(self, input, name):
         
         H = len(input)
@@ -401,7 +424,18 @@ class Math:
             means.append(col_sum / rows)
             
         return [[val - means[j] for j, val in enumerate(row)] for row in input]
-
+    
+    def frobenius_norm(self, input : list):
+        ## Computes the euclidean distance in a matrix to make a single value
+        ## Used mostly for loss when the loss for backprop is actually a matrix
+        
+        total = 0
+        
+        for row in input:
+            for element in row:
+                total += element ** 2
+                
+        return math.sqrt(total)
     
     def transpose(self, matrix : list):
         

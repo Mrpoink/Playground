@@ -25,16 +25,18 @@ class Encoder:
         # INPUT SIZE IS THE SIZE OF THE EMBEDDINGS!!!
         # true input is sequence so it will be a matrix of dimension seq_len x input_size if input_size is the size of the embeddings
         
-        self.Wq = [[random.uniform(-0.01, 0.01) for _ in range(input_size)] for _ in range(input_size)]
-        self.Wk = [[random.uniform(-0.01, 0.01) for _ in range(input_size)] for _ in range(input_size)]
-        self.Wv = [[random.uniform(-0.01, 0.01) for _ in range(input_size)] for _ in range(input_size)]
-        self.ffn = FFN.FeedForward(4, input_size = input_size)
+        self.Wq = _math.generate_he_matrix(input_size, input_size)
+        self.Wk = _math.generate_he_matrix(input_size, input_size)
+        self.Wv = _math.generate_he_matrix(input_size, input_size)
+        
+        self.ffn = FFN.FeedForward(4000, input_size = input_size)
         self.b = [[0.0] for _ in range(input_size)]
         ## Please remember that the input size if the dimension of the vectors in the layers
         ## The amount of layers is 1 here, however it would be better to probably match the maximum amount of values
         ## In the context. Maybe??
         
         self.att = ATT.Attention()
+        self.cache = {}
         
     def self_att(self, input):
         
@@ -48,9 +50,15 @@ class Encoder:
         # _math.print_matrix(K, "K: ")
         # _math.print_matrix(V, "V: ")
         
-        att = self.att.find_att(Q, K, V)
+        att, soft_scores = self.att.find_att(Q, K, V)
+            
+            # _math.print_matrix(att, "ATT: ")
         
-        # _math.print_matrix(att, "ATT: ")
+        self.cache = {
+            'input': input,
+            'Q': Q, 'K': K, 'V': V,
+            'soft_scores': soft_scores
+        }
         
         layer_norm = _math.matrix_addition(att, input)
         
@@ -77,19 +85,30 @@ class Encoder:
         
         return x
     
+    def backward(self, d_output, lr):
+        
+        d_ffn_input = self.ffn.backward(d_output, lr)
+        
+        d_attn_in = d_ffn_input
+        
+        
+        dWq, dWk, dWv, _, _, _ = _mle.backprop_att(
+            self.cache['soft_scores'],
+            self.cache['Q'],
+            self.cache['K'],
+            self.cache['V'],
+            d_attn_in,
+            self.cache['input']
+        )
+        
+        self.Wq = _math.matrix_subtraction(self.Wq, _math.scalar_multiply(dWq, lr))
+        self.Wk = _math.matrix_subtraction(self.Wk, _math.scalar_multiply(dWk, lr))
+        self.Wv = _math.matrix_subtraction(self.Wv, _math.scalar_multiply(dWv, lr))
+        
+        return d_attn_in
+        
 
 
-test_input = [
-    [10.0, 10.0, 10.0, 10.0], 
-    [0.1, 0.1, 0.1, 0.1],
-    [0.1, 0.1, 0.1, 0.1]
-]
-
-# Run your self_att
-encoder = Encoder(len(test_input), len(test_input[0]))
-output = encoder.process(test_input)
-
-_math.print_matrix(output, "OUTPUT: ")
     
     
         

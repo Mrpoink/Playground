@@ -366,3 +366,63 @@ class SMLE:
         return pe
     
     
+    def generate_mask(self, seq_len):
+        
+        mask = [[0.0 for _ in range(seq_len)] for _ in range(seq_len)]
+        
+        for i in range(seq_len):
+            for j in range(i+1, seq_len):
+                mask[i][j] = -1e9
+                
+        return mask
+    
+    def backprop_att(self, soft_scores, Q, K, V, dZ, X_q, X_kv=None):
+        
+        if X_kv is None:
+            X_kv = X_q
+        
+        dV = self._math.dot_product(self._math.transpose(soft_scores), dZ)
+        
+        dWv = self._math.dot_product(self._math.transpose(X_kv), dV)
+        dWeights = self._math.dot_product(dZ, self._math.transpose(V))
+        
+        dScore = [[0.0 for _ in range(len(soft_scores[0]))] for _ in range(len(soft_scores))]
+        num = 0
+        for num, row in enumerate(soft_scores):
+            weighted_gradient = self._math.dot_product_vectors(soft_scores[num], dWeights[num])
+            for i in range(len(row)):
+                dScore[num][i] = row[i] * (dWeights[num][i] - weighted_gradient)
+                
+                
+                
+        dQ = self._math.dot_product(dScore, K)
+        dK = self._math.dot_product(self._math.transpose(dScore), Q)
+        
+        d_k = math.sqrt(len(K[0]))
+        
+        dWq = self._math.dot_product(self._math.transpose(X_q), self._math.scalar_divide(dQ, d_k))
+        dWk = self._math.dot_product(self._math.transpose(X_kv), self._math.scalar_divide(dK, d_k))
+        
+        dWq = self.gradient_clip(dWq, 0.1)
+        dWk = self.gradient_clip(dWk, 0.1)
+        
+        return dWq, dWk, dWv, dQ, dK, dV
+    
+    def split_heads(self, matrix, heads):
+        
+        rows = len(matrix)
+        cols = len(matrix[0])
+        
+        d_head = cols // heads
+        
+        heads = []
+        for h in range(heads):
+            
+            start = h * d_head
+            end = start * d_head
+            
+            head_mat = [row[start:end] for row in matrix]
+            heads.append(head_mat)
+            
+        return heads                
+    

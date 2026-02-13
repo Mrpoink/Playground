@@ -27,10 +27,39 @@ class FeedForward:
         a = input
         
         for i in range(len(self.layers)):
+            
+            self.layers[i].input = a
                 
             z = self.layers[i].activate(a)
             a = _math.relu(z)
             
             self.layers[i].output = a
+            self.layers[i].z = z
             
         return a
+    
+    def backward(self, d_output, lr):
+        
+        d_a = d_output
+        
+        for i in reversed(range(len(self.layers))):
+            
+            layer = self.layers[i]
+            
+            d_z = _math.hadamard_product(d_a, _math.relu_der(layer.z))
+            
+            d_w = _math.dot_product(_math.transpose(layer.input), d_z)
+            
+            d_b = [[sum(col) for col in _math.transpose(d_z)]]
+            d_b = _math.transpose(d_b)
+            
+            d_a = _math.dot_product(d_z, _math.transpose(layer.weight))
+            
+            update = _math.scalar_multiply(d_w, lr)
+            
+            layer.weight = _math.matrix_subtraction(layer.weight, update)
+            layer.bias = _math.matrix_subtraction(layer.bias, _math.scalar_multiply(d_b, lr))
+            
+        return d_a
+            
+            

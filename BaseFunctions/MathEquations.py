@@ -450,8 +450,13 @@ class Math:
         return math.sqrt(total)
     
     def relu(self, matrix):
-        
-        return [[max(0.0, val) for val in row] for row in matrix]
+    # Leaky ReLU: max(0.01 * x, x)
+        return [[val if val > 0 else 0.01 * val for val in row] for row in matrix]
+
+    def relu_der(self, matrix):
+        # Gradient is 1 for positive, 0.01 for negative
+        der = [[1.0 if val > 0 else 0.01 for val in row] for row in matrix]
+        return der
     
     def transpose(self, matrix : list):
         
@@ -473,7 +478,12 @@ class Math:
                 
                 input[i][j] = input[i][j] / scalar   
                 
-        return input    
+        return input   
+    
+    def generate_he_matrix(self, rows, cols):
+        # Standard He Initialization: variance = 2/n
+        std = math.sqrt(2.0 / rows)
+        return [[random.gauss(0, std) for _ in range(cols)] for _ in range(rows)] 
     
     
     def tanh(self, number):
@@ -510,6 +520,22 @@ class Math:
         squared = self.hadamard_product(input, input)
         
         return self.matrix_subtraction_scalar(1.0, squared)
+    
+    def vert_concat(self, matrix_1, matrix_2):
+        
+        vert_concat = [row[:] for row in matrix_1]
+        
+        for row in matrix_2:
+            vert_concat.append(row)
+            
+        return vert_concat
+    
+    def horiz_concat(self, matrix_1, matrix_2):
+        horiz_concat = []
+        for i in range(len(matrix_1)):
+            horiz_concat.append(matrix_1[i] + matrix_2[i])
+            
+        return horiz_concat
         
                 
         

@@ -79,27 +79,27 @@ class FeedForward:
 
 
 
-input = _math.normalize([[random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()],
-        [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()]])
-ground_truth = _math.normalize([[random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()],
-        [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()], \
-        [random.random(), random.random(), random.random()]])
+# input = _math.normalize([[random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()],
+#         [random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()]])
+# ground_truth = _math.normalize([[random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()],
+#         [random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()], \
+#         [random.random(), random.random(), random.random()]])
 
-ff = FeedForward(32, input_size=len(input))
+# ff = FeedForward(32, input_size=len(input))
 
-print("Trying to train....")
-ff.train(input, ground_truth, epochs=500, learning_rate=0.01)
+# print("Trying to train....")
+# ff.train(input, ground_truth, epochs=500, learning_rate=0.01)
 
-ff.layers = ff.best_layers
+# ff.layers = ff.best_layers
 
-print(ff.forward(input))
+# print(ff.forward(input))
 
 # print("\n\n--------------\n\nInput: \n")
 # for row in input:

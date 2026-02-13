@@ -349,5 +349,20 @@ class SMLE:
             predicted_text += best_char
         return predicted_text
     
+    def position_wise(self, seq_len, d_model):
+        
+        pe = [[0.0 for _ in range(d_model)] for _ in range(seq_len)]
+        
+        for position in range(seq_len):
+            for i in range(0, d_model, 2):
+                
+                denominator = math.pow(10000, (2 * i) / d_model)
+                
+                pe[position][i] = math.sin(position / denominator)
+                
+                if i + 1 < d_model:
+                    pe[position][i + 1] = math.cos(position / denominator)
+                    
+        return pe
     
     

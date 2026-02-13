@@ -390,6 +390,8 @@ class Math:
         n2 = len(matrix_2)
         p = len(matrix_2[0])
         if n1 != n2:
+            self.print_matrix(matrix_1, "Matrix 1: ")
+            self.print_matrix(matrix_2, "Matrix 2: ")
             raise ValueError("Incompatible dimensions")
         result = [[0.0 for _ in range(p)] for _ in range(m)]
         for i in range(m):
@@ -402,6 +404,16 @@ class Math:
                 result[i][k] = s
         return result
         
+    def layer_norm(self, matrix, eps=1e-5):
+        normed_matrix = []
+        for row in matrix:
+            n = len(row)
+            mean = sum(row) / n
+            variance = sum((x - mean) ** 2 for x in row) / n
+            # Normalize: (x - mean) / std_dev
+            normed_row = [(x - mean) / math.sqrt(variance + eps) for x in row]
+            normed_matrix.append(normed_row)
+        return normed_matrix
         
     def covariance(self, centered_matrix):
         n = len(centered_matrix)
@@ -437,6 +449,10 @@ class Math:
                 
         return math.sqrt(total)
     
+    def relu(self, matrix):
+        
+        return [[max(0.0, val) for val in row] for row in matrix]
+    
     def transpose(self, matrix : list):
         
         return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
@@ -448,7 +464,16 @@ class Math:
                 
                 input[i][j] = input[i][j] * scalar   
                 
-        return input     
+        return input   
+    
+    def scalar_divide(self, input : list, scalar):
+        
+        for i in range(len(input)):
+            for j in range(len(input[0])):
+                
+                input[i][j] = input[i][j] / scalar   
+                
+        return input    
     
     
     def tanh(self, number):

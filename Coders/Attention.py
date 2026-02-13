@@ -46,11 +46,21 @@ class MultiHead:
         
         self.d_head = d_model // n_heads
         
-        self.Wo = _math.generate_he_matrix(d_model, d_model)
+        
         self.cache = {}
+        
+        self.Wo = _math.generate_he_matrix(d_model, d_model)
+        self.Wq = _math.generate_he_matrix(d_model, d_model)
+        self.Wk = _math.generate_he_matrix(d_model, d_model)
+        self.Wv = _math.generate_he_matrix(d_model, d_model)
+        self.Wo = _math.generate_he_matrix(d_model, d_model)
         
         
     def forward(self, Q, K, V, mask=None):
+        
+        self.cache['input_q'] = Q
+        self.cache['input_k'] = K
+        self.cache['input_v'] = V
         
         qs = _mle.split_heads(Q, self.n_heads)
         ks = _mle.split_heads(K, self.n_heads)
@@ -72,7 +82,7 @@ class MultiHead:
             out = _math.dot_product(scaled_qkt, vs[i])
             
             head_outputs.append(out)
-            head_scores.append(head_scores)
+            head_scores.append(scaled_qkt)
             
         merged = _math.vert_concat(head_outputs)
         
@@ -82,34 +92,51 @@ class MultiHead:
         self.cache = {
             'head_qs': qs, 'head_ks': ks, 'head_vs': vs,
             'head_scores': head_scores,
-            'merged': merged
-        }
+            'merged': merged,
+            'output': output
+            }
         
         return output, head_scores
     
     
     def backward(self, d_output, X_q, X_kv, lr):
         
-        dWo = _math.dot_product(_math.transpose(self.cache['merged']), d_output)
-        
         d_merged = _math.dot_product(d_output, _math.transpose(self.Wo))
-        
         d_heads = _mle.split_heads(d_merged, self.n_heads)
         
-        total_dWq = _math.get_blank_matrix(self.d_model, self.d_model)
-        total_dWk = _math.get_blank_matrix(self.d_model, self.d_model)
-        total_dWv = _math.get_blank_matrix(self.d_model, self.d_model)
-        
+        dQ_heads, dK_heads, dV_heads = [], [], []
         
         for i in range(self.n_heads):
-            dWq_h, dWk_h, dWv_h, dQ_h, dK_h, dV_h = _mle.backprop_att(
+            
+            _, _, _, dQ_h, dK_h, dV_h = _mle.backprop_att(
                 self.cache['head_scores'][i],
                 self.cache['head_qs'][i], self.cache['head_ks'][i], self.cache['head_vs'][i],
                 d_heads[i], 
-                _math.split_heads(X_q, self.n_heads)[i],
-                _math.split_heads(X_kv, self.n_heads)[i]
+                _mle.split_heads(X_q, self.n_heads)[i],
+                _mle.split_heads(X_kv, self.n_heads)[i]
             )
+            dQ_heads.append(dQ_h); dK_heads.append(dK_h); dV_heads.append(dV_h)
             
+        dQ_full = _math.concat_heads(dQ_heads)
+        dK_full = _math.concat_heads(dK_heads)
+        dV_full = _math.concat_heads(dV_heads)
+        
+        d_Xq = _math.dot_product(dQ_full, _math.transpose(self.Wq))
+        d_Xkv = _math.matrix_addition(
+            _math.dot_product(dK_full, _math.transpose(self.Wk)),
+            _math.dot_product(dV_full, _math.transpose(self.Wv))
+        )
+        
+        dWq = _math.dot_product(_math.transpose(X_q), dQ_full)
+        self.Wq = _math.matrix_subtraction(self.Wq, _math.scalar_multiply(dWq, lr))
+        
+        dWk = _math.dot_product(_math.transpose(X_kv), dK_full)
+        self.Wk = _math.matrix_subtraction(self.Wk, _math.scalar_multiply(dWk, lr))
+        
+        dWv = _math.dot_product(_math.transpose(X_kv), dV_full)
+        self.Wv = _math.matrix_subtraction(self.Wv, _math.scalar_multiply(dWv, lr))
+        
+        dWo = _math.dot_product(_math.transpose(self.cache['merged']), d_output)
         self.Wo = _math.matrix_subtraction(self.Wo, _math.scalar_multiply(dWo, lr))
         
-        return d_enc_out
+        return d_Xq, d_Xkv

@@ -41,7 +41,8 @@ class Transformer:
             
             lr = _mle.cosine_scheduler(epoch, epochs, max_lr, min_lr)
             
-            prediction = self.forward(src, tgt)
+            enc_out = self.encoder.process(src) 
+            prediction = self.decoder.process(tgt, enc_out)
             
             current_loss = _mle.MSE_loss(prediction, expected_output)
                 
@@ -53,7 +54,7 @@ class Transformer:
             
             d_output = _mle.MSE_loss_der(prediction, expected_output)
             
-            d_encoder_error = self.decoder.backward(d_output, self.encoder.cache['V'], lr)
+            d_encoder_error = self.decoder.backward(d_output, enc_out, lr)
             
             self.encoder.backward(d_encoder_error, lr)
             

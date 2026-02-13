@@ -408,6 +408,35 @@ class SMLE:
         
         return dWq, dWk, dWv, dQ, dK, dV
     
+    def backprop_att_vectorized(self, soft_scores, Q, K, V, dZ, X_q, X_kv):
+        """
+        Vectorized backprop for all heads at once.
+        Shapes:
+        soft_scores: (H, N, N)
+        Q, K, V:     (H, N, D)
+        dZ:          (H, N, D)
+        """
+        
+        dV = self._math.batch_dot(self._math.transpose(soft_scores), dZ)
+        
+        dA = self._math.batch_dot(dZ, self._math.transpose(V))
+        
+        weighted_grad = self._math.hadamard_product(soft_scores, dA)
+        dScore = soft_scores * (dA - weighted_grad)
+
+        dQ = self._math.batch_dot(dScore, K)
+        dK = self._math.batch_dot(self._math.transpose(dScore), Q)
+        
+        d_k_sqrt = math.sqrt(K.shape[-1])
+        dQ /= d_k_sqrt
+        dK /= d_k_sqrt
+
+        dWq = self._math.batch_dot(self._math.transpose(X_q), dQ)
+        dWk = self._math.batch_dot(self._math.transpose(X_kv), dK)
+        dWv = self._math.batch_dot(self._math.transpose(X_kv), dV)
+
+        return dWq, dWk, dWv, dQ, dK, dV
+    
     def split_heads(self, matrix, heads):
         
         rows = len(matrix)

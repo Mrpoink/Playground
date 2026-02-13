@@ -536,6 +536,50 @@ class Math:
             horiz_concat.append(matrix_1[i] + matrix_2[i])
             
         return horiz_concat
+    
+    def concate_heads(self, heads):
+        num_rows = len(heads[0])
+        merged = [[] for _ in range(num_rows)]
+        
+        for row_idx in range(num_rows):
+            for head in heads:
+                merged[row_idx].extend(head[row_idx])
+        return merged
+    
+    def transpose_batch(self, tensor):
+        """
+        Swaps the last two dimensions of a 3D tensor (H, R, C) -> (H, C, R).
+        """
+        transposed = []
+        for matrix in tensor:
+            # Standard 2D transpose logic
+            t_matrix = [[matrix[r][c] for r in range(len(matrix))] 
+                        for c in range(len(matrix[0]))]
+            transposed.append(t_matrix)
+        return transposed
+
+    def batch_dot(self, A, B):
+        """
+        Multiplies two 3D tensors A (H, M, K) and B (H, K, N).
+        Returns tensor C (H, M, N).
+        """
+        H = len(A)
+        M = len(A[0])
+        K = len(A[0][0])
+        N = len(B[0][0])
+        
+        # Initialize the 3D result tensor with zeros
+        result = [[[0.0 for _ in range(N)] for _ in range(M)] for _ in range(H)]
+        
+        for h in range(H):
+            for i in range(M):
+                for j in range(N):
+                    sum_val = 0.0
+                    for k in range(K):
+                        sum_val += A[h][i][k] * B[h][k][j]
+                    result[h][i][j] = sum_val
+                    
+        return result
         
                 
         

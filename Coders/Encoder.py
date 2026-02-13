@@ -19,23 +19,14 @@ _mle = MLE.SMLE()
 
 class Encoder:
     
-    def __init__(self, seq_len, input_size):
+    def __init__(self, seq_len, input_size, n_heads=2):
         
         ## 
         # INPUT SIZE IS THE SIZE OF THE EMBEDDINGS!!!
         # true input is sequence so it will be a matrix of dimension seq_len x input_size if input_size is the size of the embeddings
         
-        self.Wq = _math.generate_he_matrix(input_size, input_size)
-        self.Wk = _math.generate_he_matrix(input_size, input_size)
-        self.Wv = _math.generate_he_matrix(input_size, input_size)
-        
-        self.ffn = FFN.FeedForward(4000, input_size = input_size)
-        self.b = [[0.0] for _ in range(input_size)]
-        ## Please remember that the input size if the dimension of the vectors in the layers
-        ## The amount of layers is 1 here, however it would be better to probably match the maximum amount of values
-        ## In the context. Maybe??
-        
-        self.att = ATT.Attention()
+        self.mha = ATT.MultiHead(n_heads=n_heads, d_model=input_size)
+        self.ffn = FFN.FeedForward(4000, input_size=input_size)
         self.cache = {}
         
     def self_att(self, input):
@@ -71,17 +62,14 @@ class Encoder:
         
         pos_enc = _mle.position_wise(len(input), len(input[0]))
         
-        input = _math.matrix_addition(input, pos_enc)
+        x = _math.matrix_addition(input, pos_enc)
         
-        attn = self.self_att(input)
+        attn_out, scores = self.mha.forward(x, x, x)
         
-        x = _math.matrix_addition(input, attn)
-        
+        x = _math.layer_norm(_math.matrix_addition(x, attn_out))
         ffn_out = self.ffn.forward(x)
         
-        x = _math.matrix_addition(x, ffn_out)
-        
-        x = _math.layer_norm(x)
+        x = _math.layer_norm(_math.matrix_addition(x, ffn_out))
         
         return x
     
@@ -89,23 +77,9 @@ class Encoder:
         
         d_ffn_input = self.ffn.backward(d_output, lr)
         
-        d_attn_in = d_ffn_input
+        d_Xq, d_Xkv = self.mha.backward(d_ffn_input, self.mha.cache['input_q'], self.mha.cache['input_kv'], lr)
         
-        
-        dWq, dWk, dWv, _, _, _ = _mle.backprop_att(
-            self.cache['soft_scores'],
-            self.cache['Q'],
-            self.cache['K'],
-            self.cache['V'],
-            d_attn_in,
-            self.cache['input']
-        )
-        
-        self.Wq = _math.matrix_subtraction(self.Wq, _math.scalar_multiply(dWq, lr))
-        self.Wk = _math.matrix_subtraction(self.Wk, _math.scalar_multiply(dWk, lr))
-        self.Wv = _math.matrix_subtraction(self.Wv, _math.scalar_multiply(dWv, lr))
-        
-        return d_attn_in
+        return _math.matrix_addition(d_Xq, d_Xkv)
         
 
 

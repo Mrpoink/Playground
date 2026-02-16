@@ -26,7 +26,7 @@ class Encoder:
         # true input is sequence so it will be a matrix of dimension seq_len x input_size if input_size is the size of the embeddings
         
         self.mha = ATT.MultiHead(n_heads=n_heads, d_model=input_size)
-        self.ffn = FFN.FeedForward(4000, input_size=input_size)
+        self.ffn = FFN.FeedForward(400, input_size=input_size)
         self.cache = {}
         
     def self_att(self, input):
@@ -53,7 +53,7 @@ class Encoder:
         
         layer_norm = _math.matrix_addition(att, input)
         
-        x  = _math.layer_norm(layer_norm)
+        x, _  = _math.layer_norm_forward(layer_norm)
         
         return x
     
@@ -66,10 +66,10 @@ class Encoder:
         
         attn_out, scores = self.mha.forward(x, x, x)
         
-        x = _math.layer_norm(_math.matrix_addition(x, attn_out))
+        x, _ = _math.layer_norm_forward(_math.matrix_addition(x, attn_out))
         ffn_out = self.ffn.forward(x)
         
-        x = _math.layer_norm(_math.matrix_addition(x, ffn_out))
+        x, _ = _math.layer_norm_forward(_math.matrix_addition(x, ffn_out))
         
         return x
     

@@ -404,17 +404,89 @@ class Math:
                 result[i][k] = s
         return result
         
-    def layer_norm(self, matrix, eps=1e-5):
-        normed_matrix = []
+    def layer_norm_forward(self, matrix, gamma=None, beta=None, eps=1e-5):
+        """
+        Per-row LayerNorm.
+        matrix: [rows][features]
+        gamma, beta: optional vectors of length = features
+        returns: (out, cache)
+        """
+        out = []
+        x_hat_cache = []
+        mean_cache = []
+        var_cache = []
         for row in matrix:
             n = len(row)
             mean = sum(row) / n
-            variance = sum((x - mean) ** 2 for x in row) / n
-            # Normalize: (x - mean) / std_dev
-            normed_row = [(x - mean) / math.sqrt(variance + eps) for x in row]
-            normed_matrix.append(normed_row)
-        return normed_matrix
-        
+            var = sum((x - mean) ** 2 for x in row) / n
+            inv_std = 1.0 / math.sqrt(var + eps)
+            x_hat = [(x - mean) * inv_std for x in row]
+
+            if gamma is not None:
+                x_hat = [x_hat[i] * gamma[i] for i in range(n)]
+            if beta is not None:
+                x_hat = [x_hat[i] + beta[i] for i in range(n)]
+
+            out.append(x_hat)
+            x_hat_cache.append([(x - mean) * inv_std for x in row])
+            mean_cache.append(mean)
+            var_cache.append(var)
+
+        cache = {
+            "x_hat": x_hat_cache,  # normalized (before gamma/beta)
+            "mean": mean_cache,
+            "var": var_cache,
+            "eps": eps,
+            "gamma": gamma
+        }
+        return out, cache
+    
+    def backward_layer_norm(self, dy, cache):
+        """
+        dy: [rows][features]
+        returns: dx, dgamma, dbeta
+        """
+        x_hat = cache["x_hat"]
+        var = cache["var"]
+        eps = cache["eps"]
+        gamma = cache["gamma"]
+
+        rows = len(dy)
+        cols = len(dy[0])
+
+        # dgamma, dbeta are per-feature (sum over rows)
+        if gamma is None:
+            dgamma = None
+            dbeta = None
+        else:
+            dgamma = [0.0 for _ in range(cols)]
+            dbeta = [0.0 for _ in range(cols)]
+            for r in range(rows):
+                for c in range(cols):
+                    dgamma[c] += dy[r][c] * x_hat[r][c]
+                    dbeta[c] += dy[r][c]
+
+        dx = [[0.0 for _ in range(cols)] for _ in range(rows)]
+        for r in range(rows):
+            n = cols
+            inv_std = 1.0 / math.sqrt(var[r] + eps)
+
+            # dx_hat
+            if gamma is None:
+                dx_hat = [dy[r][i] for i in range(n)]
+            else:
+                dx_hat = [dy[r][i] * gamma[i] for i in range(n)]
+
+            sum_dxhat = sum(dx_hat)
+            sum_dxhat_xhat = sum(dx_hat[i] * x_hat[r][i] for i in range(n))
+
+            for i in range(n):
+                dx[r][i] = (1.0 / n) * inv_std * (
+                    n * dx_hat[i] - sum_dxhat - x_hat[r][i] * sum_dxhat_xhat
+                )
+
+        return dx, dgamma, dbeta
+                
     def covariance(self, centered_matrix):
         n = len(centered_matrix)
         cols = len(centered_matrix[0])

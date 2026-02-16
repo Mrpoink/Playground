@@ -95,12 +95,14 @@ class MultiHead:
             qkt = _math.dot_product(qs[i], K_t)
             
             
-            scaled_qkt = _mle.softmax(_math.scalar_divide(qkt, math.sqrt(self.d_head)))
+            scaled_qkt = _math.scalar_divide(qkt, math.sqrt(self.d_head))
             
             if mask is not None:
                 scaled_qkt = _math.matrix_addition(scaled_qkt, mask)
                 
-            out = _math.dot_product(scaled_qkt, vs[i])
+            soft_scaled = _mle.softmax(scaled_qkt)
+                
+            out = _math.dot_product(soft_scaled, vs[i])
             
             head_outputs.append(out)
             head_scores.append(scaled_qkt)

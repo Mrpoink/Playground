@@ -16,9 +16,9 @@ import Coders.Encoder as CE
 import Coders.Decoder as CD
 
 class Transformer:
-    def __init__(self, seq_len, input_size):
-        self.encoder = CE.Encoder(seq_len, input_size)
-        self.decoder = CD.Decoder(seq_len, input_size)
+    def __init__(self, seq_len, input_size, n_heads=2):
+        self.encoder = CE.Encoder(seq_len, input_size, n_heads=n_heads)
+        self.decoder = CD.Decoder(seq_len, input_size, n_heads=n_heads)
         
     def forward(self, src_input, tgt_input):
         # Encoder processes the source
@@ -65,7 +65,7 @@ class Transformer:
 
 input_dim = 4
 seq_len = 3
-model = Transformer(seq_len, input_dim)
+model = Transformer(seq_len, input_dim, n_heads=4)
 
 # 2. Dummy Data
 src = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]]

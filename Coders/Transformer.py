@@ -8,6 +8,7 @@ sys.path.append(parent_dir)
 import BaseFunctions.MathEquations as MATH
 import BaseFunctions.StandardMLEquations as MLE
 import BaseFunctions.AVS as AVS
+import BaseFunctions.BaseTokenizer as BT
 
 _math = MATH.Math()
 _mle = MLE.SMLE()
@@ -63,15 +64,23 @@ class Transformer:
         
     
 
-input_dim = 4
-seq_len = 3
-model = Transformer(seq_len, input_dim, n_heads=4)
 
+
+tokenizer = BT.GLoVE_Tokenizer()
+
+src = tokenizer.tokenize('I am')
+tgt = tokenizer.tokenize('Me')
+input_dim = len(src[0])
+seq_len = len(src)
+
+model = Transformer(seq_len, input_dim, n_heads=50)
 # 2. Dummy Data
-src = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
-tgt = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
 
 epochs = 10000
-lr = 0.0001
+lr = 0.001
 
 model.train(src, tgt, tgt, epochs, lr)
+
+final = model.forward(src, tgt)
+
+_math.print_matrix(final, "FINAL: ")

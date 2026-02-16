@@ -77,7 +77,7 @@ class Encoder:
         
         d_ffn_input = self.ffn.backward(d_output, lr)
         
-        d_Xq, d_Xkv = self.mha.backward(d_ffn_input, self.mha.cache['input_q'], self.mha.cache['input_kv'], lr)
+        d_Xq, d_Xkv = self.mha.backward(d_ffn_input, self.mha.cache['input_q'], self.mha.cache['input_k'], lr)
         
         return _math.matrix_addition(d_Xq, d_Xkv)
         

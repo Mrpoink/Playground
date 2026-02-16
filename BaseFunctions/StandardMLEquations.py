@@ -437,18 +437,18 @@ class SMLE:
 
         return dWq, dWk, dWv, dQ, dK, dV
     
-    def split_heads(self, matrix, heads):
+    def split_heads(self, matrix, n_heads):
         
         rows = len(matrix)
         cols = len(matrix[0])
         
-        d_head = cols // heads
+        d_head = cols // n_heads
         
         heads = []
-        for h in range(heads):
+        for h in range(n_heads):
             
             start = h * d_head
-            end = start * d_head
+            end = start + d_head
             
             head_mat = [row[start:end] for row in matrix]
             heads.append(head_mat)

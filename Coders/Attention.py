@@ -41,6 +41,10 @@ class Attention:
 class MultiHead:
     
     def __init__(self, n_heads, d_model):
+        
+        if d_model % n_heads != 0:
+            raise ValueError(f"d_model ({d_model}) must be divisible by n_heads ({n_heads})")
+        
         self.n_heads = n_heads
         self.d_model = d_model
         
@@ -62,19 +66,36 @@ class MultiHead:
         self.cache['input_k'] = K
         self.cache['input_v'] = V
         
-        qs = _mle.split_heads(Q, self.n_heads)
-        ks = _mle.split_heads(K, self.n_heads)
-        vs = _mle.split_heads(V, self.n_heads)
+        Q_proj = _math.dot_product(Q, self.Wq)
+        K_proj = _math.dot_product(K, self.Wk)
+        V_proj = _math.dot_product(V, self.Wv)
+        
+        qs = _mle.split_heads(Q_proj, self.n_heads)
+        ks = _mle.split_heads(K_proj, self.n_heads)
+        vs = _mle.split_heads(V_proj, self.n_heads)
         
         head_outputs = []
         head_scores = []
         
         for i in range(self.n_heads):
             
+            curr_k = ks[i]
+            if not isinstance(curr_k[0], list): 
+                # safeguard if split_heads returned 1D lists for some reason
+                curr_k = [curr_k]
+            
             K_t = _math.transpose(ks[i])
+            
+            # print(f"d_model: {self.d_model}\nn_heads: {self.n_heads}\nd_head: {self.d_head}")
+            # _math.print_matrix(Q_proj, "Q Projection: ")
+            # _math.print_matrix(qs, "qs: ")
+            # _math.print_matrix(qs[i], "qs[i]: ")
+            # _math.print_matrix(K_t, "K_t: ")
+            
             qkt = _math.dot_product(qs[i], K_t)
             
-            scaled_qkt = _mle.softmax(qkt, math.sqrt(self.d_head))
+            
+            scaled_qkt = _mle.softmax(_math.scalar_divide(qkt, math.sqrt(self.d_head)))
             
             if mask is not None:
                 scaled_qkt = _math.matrix_addition(scaled_qkt, mask)
@@ -84,12 +105,13 @@ class MultiHead:
             head_outputs.append(out)
             head_scores.append(scaled_qkt)
             
-        merged = _math.vert_concat(head_outputs)
+        merged = _math.concate_heads(head_outputs)
         
         output = _math.dot_product(merged, self.Wo)
         
         
         self.cache = {
+            'input_q': Q, 'input_k': K, 'input_v': V,
             'head_qs': qs, 'head_ks': ks, 'head_vs': vs,
             'head_scores': head_scores,
             'merged': merged,
@@ -117,9 +139,9 @@ class MultiHead:
             )
             dQ_heads.append(dQ_h); dK_heads.append(dK_h); dV_heads.append(dV_h)
             
-        dQ_full = _math.concat_heads(dQ_heads)
-        dK_full = _math.concat_heads(dK_heads)
-        dV_full = _math.concat_heads(dV_heads)
+        dQ_full = _math.concate_heads(dQ_heads)
+        dK_full = _math.concate_heads(dK_heads)
+        dV_full = _math.concate_heads(dV_heads)
         
         d_Xq = _math.dot_product(dQ_full, _math.transpose(self.Wq))
         d_Xkv = _math.matrix_addition(
